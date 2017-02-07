@@ -38,63 +38,6 @@ var ElementInspector = Backbone.View.extend({
         '<option value=denied> Denied </option>',
 			'</select>',
       '<br>',
-      '<div id="function-div">',
-        '<label>Function Type</label>',
-        '<select class="function-type">',
-          '<option value=C> Constant </option>',
-          '<option value=R> Stochastic </option>',
-          '<option value=I> Increase </option>',
-          '<option value=D> Decrease </option>',
-          '<option value=RC> Stochastic-Constant </option>',
-          '<option value=CR> Constant-Stochastic </option>',
-          '<option value=MP> Montonic Positive </option>',
-          '<option value=MN> Montonic Negative </option>',
-          '<option value=SD> Satisfied Denied </option>',
-          '<option value=DS> Denied Satisfied </option>',
-          '<option value=UD> User Defined </option>',
-        '</select>',
-        '<select class="function-sat-value">',
-          '<option value=satisfied> Satisfied </option>',
-          '<option value=partiallysatisfied> Partially Satisfied </option>',
-          '<option value=unknown selected> Random/Stochastic </option>',
-          '<option value=partiallydenied> Partially Denied </option>',
-          '<option value=denied> Denied </option>',
-        '</select>',
-        '<div id="user-constraints">',
-          '<div id="all-user-constraints">',
-            '<div id="new-user-constraints">',
-              '<select class="user-function-type user-defined-select">',
-                '<option value=C> Constant </option>',
-                '<option value=R> Stochastic </option>',
-                '<option value=I> Increase </option>',
-                '<option value=D> Decrease </option>',
-              '</select>',
-              '<select class="user-sat-value user-defined-select">',
-                '<option value=satisfied> Satisfied </option>',
-                '<option value=partiallysatisfied> Partially Satisfied </option>',
-                '<option value=unknown selected> Random/Stochastic </option>',
-                '<option value=partiallydenied> Partially Denied </option>',
-                '<option value=denied> Denied </option>',
-              '</select>',
-            '</div>',
-          '</div>',
-          '<br>',
-          // Error message is controlled dynamically
-          '<label id="repeat-error"></label>',
-          '<select id="repeat-begin" class="repeat-select">',
-            '<option class="select-placeholder" selected disabled value="">Begin</option>',
-          '</select>',
-          '<select id="repeat-end" class="repeat-select">',
-            '<option class="select-placeholder" selected disabled value="">End</option>',
-          '</select>',
-
-          '<button id="constraint-add" class="inspector-btn small-btn green-btn">Add</button>',
-          '<button id="constraint-repeat" class="inspector-btn small-btn blue-btn">Set Repeats</button>',
-          '<button id="constraint-restart" class="inspector-btn small-btn red-btn">Clear</button>',
-        '</div>',
-      '</div>',
-      '<br>',
-      '<canvas id="chart" width="240" height="240"></canvas>',
 
   ].join(''),
   
@@ -319,7 +262,7 @@ var ElementInspector = Backbone.View.extend({
     var val = satvalues[this.$('.function-sat-value').val()];
     // Rerender chart canvas
     var data = this.constraintsObject.chartData;
-    var context = $("#chart").get(0).getContext("2d");
+    // var context = $("#chart").get(0).getContext("2d");
     if(this.constraintsObject.chart != null)
       this.constraintsObject.chart.destroy();
 
@@ -402,7 +345,7 @@ var ElementInspector = Backbone.View.extend({
       return
     }
 
-    this.constraintsObject.chart = new Chart(context).Line(data, this.chartObject.chartOptions);
+    // this.constraintsObject.chart = new Chart(context).Line(data, this.chartObject.chartOptions);
     this.updateCell(null);
   },
 
@@ -704,7 +647,7 @@ var ElementInspector = Backbone.View.extend({
 
     //Update node display based on function and values
     var value = this.$('#init-sat-value').val();
-
+    console.log(value);
     if (value == "none")
       cell.attr(".funcvalue/text", " ");
 

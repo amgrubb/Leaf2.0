@@ -10,7 +10,6 @@ var graphObject = new graphObject();		// Stores all variables between modes
 var linkInspector = new LinkInspector();
 var elementInspector = new ElementInspector();
 var constrainsInspector = new ConstraintsInspector();
-var analysisInspector = new AnalysisInspector();
 var currentHalo;
 var currentAnalysis;
 
