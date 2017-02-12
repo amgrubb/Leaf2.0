@@ -125,69 +125,6 @@ if (document.cookie){
 }
 
 
-// ----------------------------------------------------------------- //
-// Modelling link control
-$('#symbolic-btn').on('click', function(){
-	saveLinks(linkMode);
-	setLinks(linkMode);
-});
-
-// Set links or constraints
-function setLinks(mode){
-	if(mode == "Relationships"){
-		linkMode = "Constraints";
-		$('#symbolic-btn').html("Model Relationships");
-
-		var restoredLinks = graphObject.intensionConstraints;
-		paper.options.defaultLink.attributes.labels[0].attrs.text.text = " constraint ";
-		paper.options.defaultLink.attr(".marker-target/d", 'M 10 0 L 0 5 L 10 10 L 0 5 L 10 10 L 0 5 L 10 5 L 0 5');
-
-	}else if (mode == "Constraints"){
-		linkMode = "Relationships";
-		$('#symbolic-btn').html("Model Constraints");
-
-		var restoredLinks = graphObject.links;
-		paper.options.defaultLink.attributes.labels[0].attrs.text.text = "and";
-		paper.options.defaultLink.attr(".marker-target/d", 'M 10 0 L 10 10 M 10 5 L 0 5');
-
-	}
-
-	$('#modeText').text("Modelling " + linkMode);
-
-	// render preexisting links in new mode
-	for (var l = 0; l < restoredLinks.length; l++){
-		restoredLinks[l].attr('./display', '');
-	}
-}
-
-// Save links or constraints
-function saveLinks(mode){
-	// Hide all relationships that are not suppose to be dispalyed
-	if(mode == "Relationships"){
-		var links = graph.getLinks();
-		graphObject.links = [];
-		links.forEach(function(link){
-			if(!isLinkInvalid(link)){
-				if(!link.attr('./display')){
-					link.attr('./display', 'none');
-					graphObject.links.push(link);
-				}
-			}else{link.remove();}
-		});
-	}else if (mode == "Constraints"){
-		var links = graph.getLinks();
-		graphObject.intensionConstraints = [];
-		links.forEach(function(link){
-			var linkStatus = link.attributes.labels[0].attrs.text.text.replace(/\s/g, '');
-			if(!isLinkInvalid(link) && (linkStatus != "constraint") && (linkStatus != "error")){
-				if(!link.attr('./display')){
-					link.attr('./display', 'none');
-					graphObject.intensionConstraints.push(link);
-				}
-			}else{link.remove();}
-		});
-	}
-}
 
 // ----------------------------------------------------------------- //
 // Rappid setup
