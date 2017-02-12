@@ -9,7 +9,6 @@ var graphObject = new graphObject();		// Stores all variables between modes
 
 var linkInspector = new LinkInspector();
 var elementInspector = new ElementInspector();
-var constrainsInspector = new ConstraintsInspector();
 var currentHalo;
 var currentAnalysis;
 
@@ -82,7 +81,6 @@ stencil.load([goal, task, sgoal, res, act]);
 
 //Setup LinkInspector
 $('.inspector').append(linkInspector.el);
-$('.inspector').append(constrainsInspector.el);
 
 //Interface set up for modelling mode on startup
 $('#dropdown-model').css("display","none");
@@ -242,12 +240,9 @@ paper.on("link:options", function(evt, cell){
 		return
 
 	linkInspector.clear();
-	constrainsInspector.clear();
 	elementInspector.clear();
 	if (linkMode == "Relationships"){
 		linkInspector.render(cell);
-	}else if (linkMode == "Constraints"){
-		constrainsInspector.render(cell);
 	}
 });
 
@@ -321,7 +316,6 @@ paper.on('cell:pointerup', function(cellView, evt) {
 		}
 
 		linkInspector.clear();
-		constrainsInspector.clear();
 		elementInspector.render(cellView);
 	}
 });
