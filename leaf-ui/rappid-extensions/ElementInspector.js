@@ -55,7 +55,7 @@ var ElementInspector = Backbone.View.extend({
   events: {
     'keyup .cell-attrs-text': 'nameAction',
     'change #init-sat-value':'updateHTML',
-    'change #actor-type': 'updateHTML'
+    'change .actor-type': 'updateHTML'
 
   },
   
