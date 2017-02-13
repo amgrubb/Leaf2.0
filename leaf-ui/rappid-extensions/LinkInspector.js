@@ -143,6 +143,7 @@ var LinkInspector = Backbone.View.extend({
         '.marker-target': {stroke: '#000000', "d": 'M 10 0 L 0 5 L 10 10 L 0 5 L 10 10 L 0 5 L 10 5 L 0 5'}
       });
       link.label(0 ,{position: 0.5, attrs: {text: {text: link.prop("sublink-type")}}});
+      //hi
     }
     else if (linktype == "NeededBy"){
       link.attr({
