@@ -337,7 +337,7 @@ function drawDefaultLink(link, linktype){
 			link.attr({
 			  '.marker-target': {'d': 'M-4,0a4,4 0 1,0 8,0a4,4 0 1,0 -8,0'}
 			})
-			link.label(0 ,{position: 0.5, attrs: {text: {text: "NeededBy"}}});
+			link.label(0 ,{position: 0.5, attrs: {text: {text: ""}}});
 			break;
 		case "Error":
 			link.label(0 ,{position: 0.5, attrs: {text: {text: "Error"}}});
