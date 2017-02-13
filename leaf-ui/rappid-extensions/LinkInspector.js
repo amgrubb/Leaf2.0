@@ -148,7 +148,7 @@ var LinkInspector = Backbone.View.extend({
       link.attr({
           '.connection': {stroke: '#000000', 'stroke-dasharray': '0 0'},
           '.marker-source': {'d': 'M 0 0'},
-          '.marker-target': {stroke: '#000000', "d": 'M 10 0 L 0 5 L 10 10 z'}
+          '.marker-target': {stroke: '#000000', "d": 'M-4,0a4,4 0 1,0 8,0a4,4 0 1,0 -8,0'}
         });
     }
     else if (linktype == "Qualification"){
