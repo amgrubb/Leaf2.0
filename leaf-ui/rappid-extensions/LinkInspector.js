@@ -10,11 +10,6 @@ var LinkInspector = Backbone.View.extend({
     '<select class="link-type">',
       '<option value=and>And-Decomposition</option>',
       '<option value=or>Or-Decomposition (Means-end)</option>',
-      // '<option value=depends>Depends</option>',
-      // '<option value=makes>Makes</option>',
-      // '<option value=breaks>Breaks</option>',
-      // '<option value=helps>Helps</option>',
-      // '<option value=hurts>Hurts</option>',
     '</select>',
     '</div>',
     '<br>'
