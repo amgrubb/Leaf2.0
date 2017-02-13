@@ -44,11 +44,11 @@ paper = new joint.dia.Paper({
     model: graph,
     defaultLink: new joint.dia.Link({
 		'attrs': {
-			'.connection': {stroke: '#000000'},
-			'.marker-source': {'d': '0'},
-			'.marker-target': {stroke: '#000000', 'stroke-width': 1, "d": 'M 10 0 L 10 10 M 10 5 L 0 5' }
+			'.connection': {stroke: '#000000', 'stroke-dasharray': '0 0'},
+			'.marker-source': {'d': 'M 0 0'},
+			'.marker-target': {stroke: '#000000', "d": 'M 10 0 L 0 5 L 10 10 z'}
 			},
-		'labels': [{position: 0.5, attrs: {text: {text: "and"}}}]
+		'labels': [{position: 0.5, attrs: {text: {text: "this is default link. You shouldnt be able to see it"}}}]
 	})
 });
 
@@ -239,7 +239,6 @@ paper.on("link:options", function(evt, cell){
 	var link = cell.model;
 	setLinkType(link);
 	var linktype = link.attr(".link-type");
-
 	linkInspector.clear();
 	elementInspector.clear();
 	if (linkMode == "Relationships"){
@@ -247,6 +246,95 @@ paper.on("link:options", function(evt, cell){
 
 	}
 });
+// Identify link-type: Refinement, Contribution, Qualification or NeededBy
+// And store the linktype into the link
+function setLinkType(link){
+	if (!link.getTargetElement() || !link.getSourceElement()){
+		link.attr(".link-type", "Error");
+		return;
+	}
+	var sourceCell = link.getSourceElement().attributes.type;
+	var targetCell = link.getTargetElement().attributes.type;
+
+
+	switch(true){
+		case ((sourceCell == "basic.Goal") && (targetCell == "basic.Goal")):
+			link.attr(".link-type", "Refinement");
+			break;
+		case ((sourceCell == "basic.Goal") && (targetCell == "basic.Softgoal")):
+			link.attr(".link-type", "Contribution");
+			break;
+		case ((sourceCell == "basic.Goal") && (targetCell == "basic.Task")):
+			link.attr(".link-type", "Refinement");
+			break;
+		case ((sourceCell == "basic.Goal") && (targetCell == "basic.Resource")):
+			link.attr(".link-type", "Error");
+			break;
+		case ((sourceCell == "basic.Softgoal") && (targetCell == "basic.Goal")):
+			link.attr(".link-type", "Qualification");
+			break;
+		case ((sourceCell == "basic.Softgoal") && (targetCell == "basic.Softgoal")):
+			link.attr(".link-type", "Contribution");
+			break;
+		case ((sourceCell == "basic.Softgoal") && (targetCell == "basic.Task")):
+			link.attr(".link-type", "Qualification");
+			break;
+		case ((sourceCell == "basic.Softgoal") && (targetCell == "basic.Resource")):
+			link.attr(".link-type", "Qualification");
+			break;
+		case ((sourceCell == "basic.Task") && (targetCell == "basic.Goal")):
+			link.attr(".link-type", "Refinement");
+			break;
+		case ((sourceCell == "basic.Task") && (targetCell == "basic.Softgoal")):
+			link.attr(".link-type", "Contribution");
+			break;
+		case ((sourceCell == "basic.Task") && (targetCell == "basic.Task")):
+			link.attr(".link-type", "Refinement");
+			break;
+		case ((sourceCell == "basic.Task") && (targetCell == "basic.Resource")):
+			link.attr(".link-type", "Error");
+			break;
+		case ((sourceCell == "basic.Resource") && (targetCell == "basic.Goal")):
+			link.attr(".link-type", "Error");
+			break;
+		case ((sourceCell == "basic.Resource") && (targetCell == "basic.Softgoal")):
+			link.attr(".link-type", "Contribution");
+			break;
+		case ((sourceCell == "basic.Resource") && (targetCell == "basic.Task")):
+			link.attr(".link-type", "NeededBy");
+			break;
+		case ((sourceCell == "basic.Resource") && (targetCell == "basic.Resource")):
+			link.attr(".link-type", "Error");
+			break;
+
+		default:
+			console.log('Default');
+	}
+	return;
+}
+// Given a link and linktype, draw a deafult link
+function drawDefaultLink(link, linktype){
+	switch(linktype){
+		case "Refinement":
+			link.label(0 ,{position: 0.5, attrs: {text: {text: 'and'}}});
+			break;
+		case "Qualification":
+			link.attr({
+			  '.connection': {stroke: '#000000', 'stroke-dasharray': '5 2'},
+			  '.marker-source': {'d': 'M 0 0'},
+			  '.marker-target': {'d': 'M 0 0'}
+			});
+			break;
+		case "Contribution":
+			link.label(0 ,{position: 0.5, attrs: {text: {text: "makes"}}});
+			break;
+		case "NeededBy":
+			link.label(0 ,{position: 0.5, attrs: {text: {text: "NeededBy"}}});
+		case "Error":
+			link.label(0 ,{position: 0.5, attrs: {text: {text: "Error"}}});
+		default:
+	}
+}
 
 //When a cell is clicked, create the Halo
 function isLinkInvalid(link){
@@ -263,6 +351,9 @@ paper.on('cell:pointerup', function(cellView, evt) {
 		var link = cellView.model;
 		var sourceCell = link.getSourceElement().attributes.type;
 		setLinkType(link);
+		var linktype = link.attr(".link-type");
+		drawDefaultLink(link, linktype);
+
 		// Check if link is valid or not
 		if (link.getTargetElement()){
 			var targetCell = link.getTargetElement().attributes.type;
@@ -320,71 +411,6 @@ paper.on('cell:pointerup', function(cellView, evt) {
 		elementInspector.render(cellView);
 	}
 });
-function setLinkType(link){
-	// Identify link-type: Refinement, Contribution, Qualification or NeededBy
-	// And store the linktype into the link
-	if (!link.getTargetElement() || !link.getSourceElement()){
-		link.attr(".link-type", "Error");
-		return;
-	}
-	var sourceCell = link.getSourceElement().attributes.type;
-	var targetCell = link.getTargetElement().attributes.type;
-
-	switch(true){
-		case ((sourceCell == "basic.Goal") && (targetCell == "basic.Goal")):
-			link.attr(".link-type", "Refinement");
-			break;
-		case ((sourceCell == "basic.Goal") && (targetCell == "basic.Softgoal")):
-			link.attr(".link-type", "Contribution");
-			break;
-		case ((sourceCell == "basic.Goal") && (targetCell == "basic.Task")):
-			link.attr(".link-type", "Refinement");
-			break;
-		case ((sourceCell == "basic.Goal") && (targetCell == "basic.Resource")):
-			link.attr(".link-type", "Error");
-			break;
-		case ((sourceCell == "basic.Softgoal") && (targetCell == "basic.Goal")):
-			link.attr(".link-type", "Qualification");
-			break;
-		case ((sourceCell == "basic.Softgoal") && (targetCell == "basic.Softgoal")):
-			link.attr(".link-type", "Contribution");
-			break;
-		case ((sourceCell == "basic.Softgoal") && (targetCell == "basic.Task")):
-			link.attr(".link-type", "Qualification");
-			break;
-		case ((sourceCell == "basic.Softgoal") && (targetCell == "basic.Resource")):
-			link.attr(".link-type", "Qualification");
-			break;
-		case ((sourceCell == "basic.Task") && (targetCell == "basic.Goal")):
-			link.attr(".link-type", "Refinement");
-			break;
-		case ((sourceCell == "basic.Task") && (targetCell == "basic.Softgoal")):
-			link.attr(".link-type", "Contribution");
-			break;
-		case ((sourceCell == "basic.Task") && (targetCell == "basic.Task")):
-			link.attr(".link-type", "Refinement");
-			break;
-		case ((sourceCell == "basic.Task") && (targetCell == "basic.Resource")):
-			link.attr(".link-type", "Error");
-			break;
-		case ((sourceCell == "basic.Resource") && (targetCell == "basic.Goal")):
-			link.attr(".link-type", "Error");
-			break;
-		case ((sourceCell == "basic.Resource") && (targetCell == "basic.Softgoal")):
-			link.attr(".link-type", "Contribution");
-			break;
-		case ((sourceCell == "basic.Resource") && (targetCell == "basic.Task")):
-			console.log('NeededBy');
-			break;
-		case ((sourceCell == "basic.Resource") && (targetCell == "basic.Resource")):
-			link.attr(".link-type", "Error");
-			break;
-
-		default:
-			console.log('Default');
-	}
-	return;
-}
 
 graph.on('change:size', function(cell, size){
 	cell.attr(".label/cx", 0.25 * size.width);

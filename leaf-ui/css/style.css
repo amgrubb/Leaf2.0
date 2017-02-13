@@ -206,7 +206,7 @@ body {
 
 #init-sat-value, .actor-type, .function-type,
 .function-sat-value, .user-defined-select, .repeat-select,
-.relationship-select, .link-type{
+.relationship-select, .sublink-type{
   background-color: rgba(31, 150, 125, 1);
   border-color: rgba(31, 121, 101, 1);
 
