@@ -73,11 +73,11 @@ $('#stencil').append(stencil.render().el);
 
 var goal = new joint.shapes.basic.Goal({ position: {x: 50, y: 20} });
 var task = new joint.shapes.basic.Task({ position: {x: 50, y: 100} });
-var sgoal = new joint.shapes.basic.Softgoal({ position: {x: 50, y: 170} });
+var quality = new joint.shapes.basic.Quality({ position: {x: 50, y: 170} });
 var res = new joint.shapes.basic.Resource({ position: {x: 50, y: 250} });
 var act = new joint.shapes.basic.Actor({ position: {x: 40, y: 400} });
 
-stencil.load([goal, task, sgoal, res, act]);
+stencil.load([goal, task, quality, res, act]);
 
 //Setup LinkInspector
 $('.inspector').append(linkInspector.el);
@@ -238,11 +238,12 @@ $('.inspector').append(elementInspector.el);
 paper.on("link:options", function(evt, cell){
 	if(mode == "Analysis")
 		return
-
+	tmp = "None";
 	linkInspector.clear();
 	elementInspector.clear();
 	if (linkMode == "Relationships"){
-		linkInspector.render(cell);
+		linkInspector.render(cell, tmp);
+
 	}
 });
 
@@ -264,6 +265,7 @@ paper.on('cell:pointerup', function(cellView, evt) {
 		// Check if link is valid or not
 		if (link.getTargetElement()){
 			var targetCell = link.getTargetElement().attributes.type;
+			// Identify link-type: Refinement, Contribution, Refinement or NeededBy
 
 			// Links of actors must be paired with other actors
 			if (((sourceCell == "basic.Actor") && (targetCell != "basic.Actor")) ||
@@ -625,7 +627,7 @@ function generateLeafFile(){
 		  	datastring += "G\t";
 		else if (elements[e] instanceof joint.shapes.basic.Task)
 		  	datastring += "T\t";
-		else if (elements[e] instanceof joint.shapes.basic.Softgoal)
+		else if (elements[e] instanceof joint.shapes.basic.Quality)
 		  	datastring += "S\t";
 		else if (elements[e] instanceof joint.shapes.basic.Resource)
 		  	datastring += "R\t";
