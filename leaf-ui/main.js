@@ -328,6 +328,9 @@ function drawDefaultLink(link, linktype){
 			link.label(0 ,{position: 0.5, attrs: {text: {text: ""}}});
 			break;
 		case "Contribution":
+			link.attr({
+			  '.marker-target': {'d': 'M 12 -3 L 5 5 L 12 13 M 5 5 L 30 5', 'fill': 'transparent'}
+			})
 			link.label(0 ,{position: 0.5, attrs: {text: {text: "makes"}}});
 			break;
 		case "NeededBy":
