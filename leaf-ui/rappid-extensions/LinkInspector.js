@@ -33,8 +33,7 @@ var LinkInspector = Backbone.View.extend({
       '<label> Link Type </label> <br>',
       '<select class="link-type">',
         '<option value="is-a">is-a</option>',
-        '<option value="plays">plays</option>',
-        '<option value="is-part-of">is-part-of</option>',
+        '<option value="participates-in">participates-in</option>',
       '</select><br>'].join(''),
 
   events: {
