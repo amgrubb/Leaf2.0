@@ -312,7 +312,8 @@ function setLinkType(link){
 	}
 	return;
 }
-// Given a link and linktype, draw a deafult link
+// Need to draw a link upon user creating link between 2 nodes
+// Given a link and linktype, draw the deafult link
 function drawDefaultLink(link, linktype){
 	switch(linktype){
 		case "Refinement":
@@ -324,15 +325,19 @@ function drawDefaultLink(link, linktype){
 			  '.marker-source': {'d': 'M 0 0'},
 			  '.marker-target': {'d': 'M 0 0'}
 			});
+			link.label(0 ,{position: 0.5, attrs: {text: {text: ""}}});
 			break;
 		case "Contribution":
 			link.label(0 ,{position: 0.5, attrs: {text: {text: "makes"}}});
 			break;
 		case "NeededBy":
 			link.label(0 ,{position: 0.5, attrs: {text: {text: "NeededBy"}}});
+			break;
 		case "Error":
 			link.label(0 ,{position: 0.5, attrs: {text: {text: "Error"}}});
+			break;
 		default:
+			break;
 	}
 }
 
