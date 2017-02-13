@@ -73,7 +73,7 @@ $('#stencil').append(stencil.render().el);
 
 var goal = new joint.shapes.basic.Goal({ position: {x: 50, y: 20} });
 var task = new joint.shapes.basic.Task({ position: {x: 50, y: 100} });
-var quality = new joint.shapes.basic.Quality({ position: {x: 50, y: 170} });
+var quality = new joint.shapes.basic.Softgoal({ position: {x: 50, y: 170} });
 var res = new joint.shapes.basic.Resource({ position: {x: 50, y: 250} });
 var act = new joint.shapes.basic.Actor({ position: {x: 40, y: 400} });
 
@@ -147,8 +147,6 @@ graph.on("add", function(cell){
 			// Unable to model constraints for actors
 			if(linkMode == "Relationships"){
 				cell.label(0, {attrs: {text: {text: "is-a"}}});
-			}else if(linkMode == "Constraints"){
-				cell.label(0, {attrs: {text: {text: "error"}}});
 			}
 		}
 	}	//Don't do anything for links
@@ -238,11 +236,14 @@ $('.inspector').append(elementInspector.el);
 paper.on("link:options", function(evt, cell){
 	if(mode == "Analysis")
 		return
-	tmp = "None";
+	var link = cell.model;
+	setLinkType(link);
+	var linktype = link.attr(".link-type");
+
 	linkInspector.clear();
 	elementInspector.clear();
 	if (linkMode == "Relationships"){
-		linkInspector.render(cell, tmp);
+		linkInspector.render(cell, linktype);
 
 	}
 });
@@ -261,12 +262,10 @@ paper.on('cell:pointerup', function(cellView, evt) {
 	if (cellView.model instanceof joint.dia.Link){
 		var link = cellView.model;
 		var sourceCell = link.getSourceElement().attributes.type;
-
+		setLinkType(link);
 		// Check if link is valid or not
 		if (link.getTargetElement()){
 			var targetCell = link.getTargetElement().attributes.type;
-			// Identify link-type: Refinement, Contribution, Refinement or NeededBy
-
 			// Links of actors must be paired with other actors
 			if (((sourceCell == "basic.Actor") && (targetCell != "basic.Actor")) ||
 				((sourceCell != "basic.Actor") && (targetCell == "basic.Actor"))){
@@ -321,7 +320,71 @@ paper.on('cell:pointerup', function(cellView, evt) {
 		elementInspector.render(cellView);
 	}
 });
+function setLinkType(link){
+	// Identify link-type: Refinement, Contribution, Qualification or NeededBy
+	// And store the linktype into the link
+	if (!link.getTargetElement() || !link.getSourceElement()){
+		link.attr(".link-type", "Error");
+		return;
+	}
+	var sourceCell = link.getSourceElement().attributes.type;
+	var targetCell = link.getTargetElement().attributes.type;
 
+	switch(true){
+		case ((sourceCell == "basic.Goal") && (targetCell == "basic.Goal")):
+			link.attr(".link-type", "Refinement");
+			break;
+		case ((sourceCell == "basic.Goal") && (targetCell == "basic.Softgoal")):
+			link.attr(".link-type", "Contribution");
+			break;
+		case ((sourceCell == "basic.Goal") && (targetCell == "basic.Task")):
+			link.attr(".link-type", "Refinement");
+			break;
+		case ((sourceCell == "basic.Goal") && (targetCell == "basic.Resource")):
+			link.attr(".link-type", "Error");
+			break;
+		case ((sourceCell == "basic.Softgoal") && (targetCell == "basic.Goal")):
+			link.attr(".link-type", "Qualification");
+			break;
+		case ((sourceCell == "basic.Softgoal") && (targetCell == "basic.Softgoal")):
+			link.attr(".link-type", "Contribution");
+			break;
+		case ((sourceCell == "basic.Softgoal") && (targetCell == "basic.Task")):
+			link.attr(".link-type", "Qualification");
+			break;
+		case ((sourceCell == "basic.Softgoal") && (targetCell == "basic.Resource")):
+			link.attr(".link-type", "Qualification");
+			break;
+		case ((sourceCell == "basic.Task") && (targetCell == "basic.Goal")):
+			link.attr(".link-type", "Refinement");
+			break;
+		case ((sourceCell == "basic.Task") && (targetCell == "basic.Softgoal")):
+			link.attr(".link-type", "Contribution");
+			break;
+		case ((sourceCell == "basic.Task") && (targetCell == "basic.Task")):
+			link.attr(".link-type", "Refinement");
+			break;
+		case ((sourceCell == "basic.Task") && (targetCell == "basic.Resource")):
+			link.attr(".link-type", "Error");
+			break;
+		case ((sourceCell == "basic.Resource") && (targetCell == "basic.Goal")):
+			link.attr(".link-type", "Error");
+			break;
+		case ((sourceCell == "basic.Resource") && (targetCell == "basic.Softgoal")):
+			link.attr(".link-type", "Contribution");
+			break;
+		case ((sourceCell == "basic.Resource") && (targetCell == "basic.Task")):
+			console.log('NeededBy');
+			break;
+		case ((sourceCell == "basic.Resource") && (targetCell == "basic.Resource")):
+			link.attr(".link-type", "Error");
+			break;
+
+		default:
+			console.log('Default');
+	}
+	return;
+}
 
 graph.on('change:size', function(cell, size){
 	cell.attr(".label/cx", 0.25 * size.width);
@@ -627,7 +690,7 @@ function generateLeafFile(){
 		  	datastring += "G\t";
 		else if (elements[e] instanceof joint.shapes.basic.Task)
 		  	datastring += "T\t";
-		else if (elements[e] instanceof joint.shapes.basic.Quality)
+		else if (elements[e] instanceof joint.shapes.basic.Softgoal)
 		  	datastring += "S\t";
 		else if (elements[e] instanceof joint.shapes.basic.Resource)
 		  	datastring += "R\t";

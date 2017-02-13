@@ -4,13 +4,31 @@ var LinkInspector = Backbone.View.extend({
 
   className: 'link-inspector',
 
-  template: [
-    '<label id="title">Constant Relationship</label>',
+  refinementtemplate: [
+    '<label id="title">Refinement Relationship</label>',
     '<br>',
     '<select class="link-type">',
       '<option value=and>And-Decomposition</option>',
       '<option value=or>Or-Decomposition (Means-end)</option>',
-      '<option value=depends>Depends</option>',
+      // '<option value=depends>Depends</option>',
+      // '<option value=makes>Makes</option>',
+      // '<option value=breaks>Breaks</option>',
+      // '<option value=helps>Helps</option>',
+      // '<option value=hurts>Hurts</option>',
+    '</select>',
+    '</div>',
+    '<br>'
+  ].join(''),
+  neededbytemplate: [
+    '<label id="title">NeededBy Relationship</label>',
+    '<br>',
+    '</div>',
+    '<br>'
+  ].join(''),
+  contributiontemplate: [
+    '<label id="title">Contribution Relationship</label>',
+    '<br>',
+    '<select class="link-type">',
       '<option value=makes>Makes</option>',
       '<option value=breaks>Breaks</option>',
       '<option value=helps>Helps</option>',
@@ -19,7 +37,20 @@ var LinkInspector = Backbone.View.extend({
     '</div>',
     '<br>'
   ].join(''),
-
+  qualificationtemplate: [
+    '<label id="title">Qulification Relationship</label>',
+    '<br>',
+    '</div>',
+    '<br>'
+  ].join(''),
+  errortemplate: [
+    '<label id="title">Error</label>',
+    '<br>',
+    '<div> This is usually caused by 3 possible reasons:  </div>',
+    '<ul> <li> Link is not connected to both source and target node </li> <li> You are connecting from resource to goal </li> <li> You are connecting from resource to resource </li>',
+    '</div>',
+    '<br>'
+  ].join(''),
   actortemplate: [
       '<label> Link Type </label> <br>',
       '<select class="link-type">',
@@ -33,8 +64,7 @@ var LinkInspector = Backbone.View.extend({
 
 
   //Method to create the Link Inspector using the template.
-  render: function(cellView, tmp) {
-    console.log(tmp);
+  render: function(cellView, linktype) {
     this._cellView = cellView;
     var cell = this._cellView.model;
     var type = cellView.model.attributes.labels[0].attrs.text.text
@@ -48,7 +78,24 @@ var LinkInspector = Backbone.View.extend({
     if (cell.prop("linktype")){
       this.$el.html(_.template(this.actortemplate)());
     }else{
-      this.$el.html(_.template(this.template)());
+      // Choose template based on linktype: Contribution, refinement, error, neededby, qualification
+      switch(linktype){
+        case 'Contribution':
+          this.$el.html(_.template(this.contributiontemplate)());
+          break;
+        case 'Refinement':
+          this.$el.html(_.template(this.refinementtemplate)());
+          break;
+        case 'Qulification':
+          this.$el.html(_.template(this.qualificationtemplate)());
+          break;
+        case 'NeededBy':
+          this.$el.html(_.template(this.neededbytemplate)());
+          break;
+        default:
+          this.$el.html(_.template(this.errortemplate)());
+      }
+      // this.$el.html(_.template(this.template)());
     }
 
     // already intialized previously
