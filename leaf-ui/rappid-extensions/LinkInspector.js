@@ -6,7 +6,7 @@ var LinkInspector = Backbone.View.extend({
 
   refinementtemplate: [
     '<label id="title">Refinement Relationship</label>',
-    '<br>',
+    '<br>', 
     '<select class="sublink-type">',
       '<option value=and>And-Decomposition</option>',
       '<option value=or>Or-Decomposition (Means-end)</option>',

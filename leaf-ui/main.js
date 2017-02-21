@@ -31,6 +31,7 @@ var satvalues = {satisfied: 2, partiallysatisfied: 1, partiallydenied: -1, denie
 
 // Mode used specify layout and functionality of toolbars
 mode = "Modelling";		// 'Analysis' or 'Modelling'
+viewMode = 'SR'; // "SR" or "SD" view
 linkMode = "Relationships";	// 'Relationships' or 'Constraints'
 
 graph = new joint.dia.Graph();
@@ -113,13 +114,26 @@ if (document.cookie){
 	for (var i = 0; i < cookies.length; i++){
 		if (cookies[i].indexOf("graph=") >= 0){
 			prevgraph = cookies[i].substr(6);
-			break;
+		}
+		// Get the previous mode from the cookie
+		if (cookies[i].indexOf("viewmode=") >= 0){
+			viewMode = cookies[i].slice(-2);
+			if (viewMode == 'SR'){
+				constructSRView();
+			}
+			else if (viewMode == 'SD'){
+				constructSDView();
+
+			}
+
 		}
 	}
 
 	if (prevgraph){
 		graph.fromJSON(JSON.parse(prevgraph));
 	}
+
+
 }
 
 
@@ -169,10 +183,15 @@ graph.on("add", function(cell){
 });
 
 //Auto-save the cookie whenever the graph is changed.
+// Auto-save the view mode (SR/SD) into the cookie as well.
 graph.on("change", function(){
+	saveCookie();
+});
+function saveCookie(){
 	var graphtext = JSON.stringify(graph.toJSON());
 	document.cookie = "graph=" + graphtext;
-});
+	document.cookie = "viewmode = " + viewMode;
+}
 
 var selection = new Backbone.Collection();
 
@@ -491,7 +510,7 @@ $('#btn-redo').on('click', _.bind(commandManager.redo, commandManager));
 $('#btn-clear-all').on('click', function(){
 	graph.clear();
 	//Delete cookie by setting expiry to past date
-	document.cookie='graph={}; expires=Thu, 18 Dec 2013 12:00:00 UTC';
+	document.cookie='viewmode=SR; graph={}; expires=Thu, 18 Dec 2013 12:00:00 UTC;';
 });
 
 $('#btn-clear-elabel').on('click', function(){
@@ -508,14 +527,7 @@ $('#btn-clear-elabel').on('click', function(){
 	}
 
 });
-$('#btn-clear-flabel').on('click', function(){
-	var elements = graph.getElements();
-	for (var i = 0; i < elements.length; i++){
-		if (elements[i].attr(".constraints/lastval") != "none"){
-			elements[i].attr(".funcvalue/text", "C");
-		}
-	}
-});
+
 $('#btn-svg').on('click', function() {
 	paper.openAsSVG();
 });
@@ -575,6 +587,49 @@ $('#btn-fnt').on('click', function(){
 
 //Save in .leaf format
 $('#btn-save-leaf').on('click', saveLeaf);
+
+// When clicked, toggle between SR and SD view
+$('#view-btn').on('click', function(){
+	if (viewMode == 'SR'){
+		// Go to SD
+		constructSDView();
+	}
+	else if (viewMode == 'SD'){
+		// Go to SR
+		constructSRView();
+	}
+
+});
+// Enter SR view
+function constructSRView(){
+	var elements = graph.getElements();
+	for (var i = 0; i < elements.length; i++){
+		var cellView  = elements[i].findView(paper);
+		var cell = cellView.model;
+		if (cell.get('parent')){
+			elements[i].attr('./display', '');
+		}
+
+	}
+	viewMode = 'SR';
+	$('#viewText').text('SR View');
+	saveCookie();
+}
+// Enter SD View
+function constructSDView(){
+	var elements = graph.getElements();
+	for (var i = 0; i < elements.length; i++){
+		var cellView  = elements[i].findView(paper);
+		var cell = cellView.model;
+		if (cell.get('parent')){
+			elements[i].attr('./display', 'none');
+		}
+
+	}
+	viewMode = 'SD';
+	$('#viewText').text('SD View');
+	saveCookie();
+}
 
 //Simulator
 loader = document.getElementById("loader");

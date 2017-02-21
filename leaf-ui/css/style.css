@@ -453,7 +453,7 @@ select > .select-placeholder {
   z-index: 3;
 }
 
-#modeText{
+#viewText{
    float: right;
    position: fixed;
    color: rgba(0,0,0,0.6);
