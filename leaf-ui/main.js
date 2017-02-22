@@ -274,9 +274,24 @@ function setLinkType(link){
 	}
 	var sourceCell = link.getSourceElement().attributes.type;
 	var targetCell = link.getTargetElement().attributes.type;
-
+	var sourceCellInActor = link.getSourceElement().get('parent');
+	var targetCellInActor = link.getTargetElement().get('parent');
 
 	switch(true){
+		case ((sourceCell == "basic.Actor") && (!targetCellInActor)):
+			link.attr(".link-type", "Dependency");
+			break;
+
+		case ((targetCell == "basic.Actor") && (!sourceCellInActor)):
+			link.attr(".link-type", "Dependency");
+			break;
+		case ((!!sourceCellInActor) && (!targetCellInActor)):
+			link.attr(".link-type", "Dependency");
+			break;
+		case ((!sourceCellInActor) && (!!targetCellInActor)):
+			link.attr(".link-type", "Dependency");
+			break;
+
 		case ((sourceCell == "basic.Goal") && (targetCell == "basic.Goal")):
 			link.attr(".link-type", "Refinement");
 			break;
@@ -326,6 +341,7 @@ function setLinkType(link){
 			link.attr(".link-type", "Error");
 			break;
 
+
 		default:
 			console.log('Default');
 	}
@@ -358,6 +374,14 @@ function drawDefaultLink(link, linktype){
 			})
 			link.label(0 ,{position: 0.5, attrs: {text: {text: ""}}});
 			break;
+		case "Dependency":
+			link.attr({
+				'.marker-source': {'d': 'M 0 0'},
+				'.marker-target': {'d': 'M 100 0 C 85 -5, 85 20, 100 15 L 100 0 M -100 0' ,'fill': 'transparent'},
+			})
+			link.label(0 ,{position: 0.5, attrs: {text: {text: ""}}});
+			break;
+
 		case "Error":
 			link.label(0 ,{position: 0.5, attrs: {text: {text: "Error"}}});
 			break;
@@ -394,6 +418,7 @@ paper.on('cell:pointerup', function(cellView, evt) {
 			}else if ((sourceCell == "basic.Actor") && (targetCell == "basic.Actor")){
 				link.label(0 ,{position: 0.5, attrs: {text: {text: 'is-a'}}});
 			}
+			console.log(link.model.get('angle'));
 		}
 		return
 
@@ -614,6 +639,9 @@ function constructSRView(){
 		if (cell instanceof joint.shapes.basic.Actor){
 			cell.attr('.outer/fill', '#CCFFCC');
 			cell.attr('.outer/stroke', '#000000');
+			cell.attr('.label/cx', 30);
+			cell.attr('.label/cy', 30);
+			cell.attr('.label/r', 30);
 		}
 
 	}
@@ -622,8 +650,9 @@ function constructSRView(){
 	// Show the boundary of actor in stencil too
 	act.attr('.outer/stroke', '#000000');
 	act.attr('.outer/fill', '#CCFFCC');
-	act.attr('.label/cx', 30)
-	act.attr('.label/cy', 30)
+	act.attr('.label/cx', 30);
+	act.attr('.label/cy', 30);
+	act.attr('.label/r', 30);
 
 	saveCookie();
 }
@@ -639,6 +668,9 @@ function constructSDView(){
 		}
 		// Hide the circle of the actors
 		if (cell instanceof joint.shapes.basic.Actor){
+			cell.attr('.label/cx', 60);
+			cell.attr('.label/cy', 60);
+			cell.attr('.label/r', 60);
 			cell.attr('.outer/fill', 'none');
 			cell.attr('.outer/stroke', 'none');
 		}
@@ -647,10 +679,11 @@ function constructSDView(){
 	viewMode = 'SD';
 	$('#viewText').text('SD View');
 	// Hide the boundary of actor in stencil too
-	act.attr('.outer/stroke', 'none');
+	act.attr('.label/cx', 60);
+	act.attr('.label/cy', 60);
+	act.attr('.label/r', 60);
 	act.attr('.outer/fill', 'none');
-	act.attr('.label/cx', 60)
-	act.attr('.label/cy', 60)
+	act.attr('.outer/stroke', 'none');
 	saveCookie();
 }
 
