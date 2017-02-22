@@ -430,7 +430,8 @@ paper.on('cell:pointerup', function(cellView, evt) {
 
 			if (ActorsBelow.length){
 				for (var a = 0; a < ActorsBelow.length; a++){
-					if (ActorsBelow[a].model instanceof joint.shapes.basic.Actor){
+					if (ActorsBelow[a].model instanceof joint.shapes.basic.Actor && viewMode == 'SR'){
+
 						ActorsBelow[a].model.embed(cell);
 					}
 				}
