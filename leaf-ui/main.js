@@ -614,8 +614,6 @@ function constructSRView(){
 		if (cell instanceof joint.shapes.basic.Actor){
 			cell.attr('.outer/fill', '#CCFFCC');
 			cell.attr('.outer/stroke', '#000000');
-			cell.attr('.label/cx', 30)
-			cell.attr('.label/cy', 30)
 		}
 
 	}
@@ -643,8 +641,6 @@ function constructSDView(){
 		if (cell instanceof joint.shapes.basic.Actor){
 			cell.attr('.outer/fill', 'none');
 			cell.attr('.outer/stroke', 'none');
-			cell.attr('.label/cx', 60)
-			cell.attr('.label/cy', 60)
 		}
 
 	}
