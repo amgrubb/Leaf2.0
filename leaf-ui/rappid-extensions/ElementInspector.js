@@ -64,7 +64,8 @@ var ElementInspector = Backbone.View.extend({
     this._cellView = cellView;
     var cell = this._cellView.model;
 
-    if (cell instanceof joint.shapes.basic.Actor){
+    // Render actor template if actor or actor2
+    if (cell instanceof joint.shapes.basic.Actor || cell instanceof joint.shapes.basic.Actor2){
       this.$el.html(_.template(this.actor_template)());
       this.$('.cell-attrs-text').val(cell.attr(".name/text") || '');
       return
@@ -160,6 +161,30 @@ var ElementInspector = Backbone.View.extend({
     	}
     	return;
   	}
+    // Cease operation if selected is Actor2
+    if (cell instanceof joint.shapes.basic.Actor2){ 
+      cell.prop("actortype", this.$('.actor-type').val());
+      if (cell.prop("actortype") == 'G'){
+        cell.attr({ '.line':
+              {'ref': '.label',
+                   'ref-x': 0,
+                   'ref-y': 0.08,
+                   'd': 'M 15 10 L 65 10',
+                   'stroke-width': 1,
+                   'stroke': 'black'}});
+      }else if (cell.prop("actortype") == 'R'){
+        cell.attr({ '.line':
+              {'ref': '.label',
+                   'ref-x': 0,
+                   'ref-y': 0.6,
+                   'd': 'M 10 65 Q 40 75 70 65 Q 40 75 15 65' ,
+                   'stroke-width': 1,
+                   'stroke': 'black'}});
+      }else {
+        cell.attr({'.line': {'stroke-width': 0}});
+      }
+      return;
+    }
 
     // save cell data
     cell.attr(".satvalue/value", this.$('#init-sat-value').val());

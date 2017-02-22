@@ -201,7 +201,6 @@ joint.shapes.basic.Actor2 = joint.shapes.basic.Generic.extend({
                 fill: '#FFFFA4',
                 stroke: '#000000'
             },
-        
             ".name": {
                 'text': 'Actor',
                 'fill': 'black',
