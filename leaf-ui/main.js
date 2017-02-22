@@ -452,7 +452,7 @@ paper.on('cell:pointerup', function(cellView, evt) {
 		currentHalo.render();
 
 		//Embed an element into an actor boundary, if necessary
-		if (!(cellView.model instanceof joint.shapes.basic.Actor)){
+		if (!(cellView.model instanceof joint.shapes.basic.Actor) && !(cellView.model instanceof joint.shapes.basic.Actor2)){
 			var ActorsBelow = paper.findViewsFromPoint(cell.getBBox().center());
 
 			if (ActorsBelow.length){
