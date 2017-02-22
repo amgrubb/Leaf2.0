@@ -280,19 +280,39 @@ function setLinkType(link){
 	var targetCellInActor = link.getTargetElement().get('parent');
 
 	switch(true){
+		// Links of actors must be paired with other actors
+		case ((sourceCell == "basic.Actor" || sourceCell == "basic.Actor2") && (targetCell == "basic.Actor" || targetCell == "basic.Actor2")):
+			link.attr(".link-type", "Actor");
+			break;
 		case ((sourceCell == "basic.Actor") && (!targetCellInActor)):
+			link.attr(".link-type", "Error");
+			break;
+		case ((targetCell == "basic.Actor") && (!sourceCellInActor)):
+			link.attr(".link-type", "Error");
+			break;
+
+		case ((sourceCell == "basic.Actor2") && (!targetCellInActor)):
+			link.attr(".link-type", "Dependency");
+			break;
+		case ((targetCell == "basic.Actor2") && (!sourceCellInActor)):
 			link.attr(".link-type", "Dependency");
 			break;
 
-		case ((targetCell == "basic.Actor") && (!sourceCellInActor)):
-			link.attr(".link-type", "Dependency");
+		case ((!!sourceCellInActor) && (!targetCellInActor && (targetCell == "basic.Actor" || targetCell == "basic.Actor2"))):
+			// link.attr(".link-type", "Dependency");
+			link.attr(".link-type", "Error");
+			break;
+		case ((!!targetCellInActor) && (!sourceCellInActor && (sourceCell == "basic.Actor" || sourceCell == "basic.Actor2"))):
+			// link.attr(".link-type", "Dependency");
+			link.attr(".link-type", "Error");
 			break;
 		case ((!!sourceCellInActor) && (!targetCellInActor)):
 			link.attr(".link-type", "Dependency");
 			break;
-		case ((!sourceCellInActor) && (!!targetCellInActor)):
+		case ((!!targetCellInActor) && (!sourceCellInActor)):
 			link.attr(".link-type", "Dependency");
 			break;
+
 
 		case ((sourceCell == "basic.Goal") && (targetCell == "basic.Goal")):
 			link.attr(".link-type", "Refinement");
@@ -343,7 +363,6 @@ function setLinkType(link){
 			link.attr(".link-type", "Error");
 			break;
 
-
 		default:
 			console.log('Default');
 	}
@@ -383,7 +402,9 @@ function drawDefaultLink(link, linktype){
 			})
 			link.label(0 ,{position: 0.5, attrs: {text: {text: ""}}});
 			break;
-
+		case "Actor":
+			link.label(0 ,{position: 0.5, attrs: {text: {text: 'is-a'}}});
+			break;
 		case "Error":
 			link.label(0 ,{position: 0.5, attrs: {text: {text: "Error"}}});
 			break;
@@ -413,14 +434,7 @@ paper.on('cell:pointerup', function(cellView, evt) {
 		// Check if link is valid or not
 		if (link.getTargetElement()){
 			var targetCell = link.getTargetElement().attributes.type;
-			// Links of actors must be paired with other actors
-			if (((sourceCell == "basic.Actor") && (targetCell != "basic.Actor")) ||
-				((sourceCell != "basic.Actor") && (targetCell == "basic.Actor"))){
-				link.label(0 ,{position: 0.5, attrs: {text: {text: 'error'}}});
-			}else if ((sourceCell == "basic.Actor") && (targetCell == "basic.Actor")){
-				link.label(0 ,{position: 0.5, attrs: {text: {text: 'is-a'}}});
-			}
-			console.log(link.model.get('angle'));
+
 		}
 		return
 
