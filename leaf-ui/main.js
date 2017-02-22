@@ -634,7 +634,7 @@ function constructSDView(){
 		// Hide the circle of the actors
 		if (cell instanceof joint.shapes.basic.Actor){
 			cell.attr('.outer/fill', 'none');
-			cell.attr('.outer/stroke', '#FFFFFF');
+			cell.attr('.outer/stroke', 'none');
 		}
 
 	}
