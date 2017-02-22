@@ -166,18 +166,18 @@ var ElementInspector = Backbone.View.extend({
       cell.prop("actortype", this.$('.actor-type').val());
       if (cell.prop("actortype") == 'G'){
         cell.attr({ '.line':
-              {'ref': '.label',
+              {
                    'ref-x': 0,
                    'ref-y': 0.08,
-                   'd': 'M 15 10 L 65 10',
+                   'd': 'M 10 10 L 70 10',
                    'stroke-width': 1,
                    'stroke': 'black'}});
       }else if (cell.prop("actortype") == 'R'){
         cell.attr({ '.line':
-              {'ref': '.label',
+              {
                    'ref-x': 0,
                    'ref-y': 0.6,
-                   'd': 'M 10 65 Q 40 75 70 65 Q 40 75 15 65' ,
+                   'd': 'M 5 10 Q 30 20 75 10 Q 30 20 5 10' ,
                    'stroke-width': 1,
                    'stroke': 'black'}});
       }else {
