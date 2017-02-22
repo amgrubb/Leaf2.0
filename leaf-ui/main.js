@@ -609,6 +609,11 @@ function constructSRView(){
 		if (cell.get('parent')){
 			elements[i].attr('./display', '');
 		}
+		// Restore the circle of Actor
+		if (cell instanceof joint.shapes.basic.Actor){
+			cell.attr('.outer/fill', '#CCFFCC');
+			cell.attr('.outer/stroke', '#000000');
+		}
 
 	}
 	viewMode = 'SR';
@@ -621,8 +626,14 @@ function constructSDView(){
 	for (var i = 0; i < elements.length; i++){
 		var cellView  = elements[i].findView(paper);
 		var cell = cellView.model;
+		// Hide all nodes that are inside actors
 		if (cell.get('parent')){
 			elements[i].attr('./display', 'none');
+		}
+		// Hide the circle of the actors
+		if (cell instanceof joint.shapes.basic.Actor){
+			cell.attr('.outer/fill', '#FFFFFF');
+			cell.attr('.outer/stroke', '#FFFFFF');
 		}
 
 	}
