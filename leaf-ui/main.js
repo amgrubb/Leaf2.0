@@ -614,11 +614,19 @@ function constructSRView(){
 		if (cell instanceof joint.shapes.basic.Actor){
 			cell.attr('.outer/fill', '#CCFFCC');
 			cell.attr('.outer/stroke', '#000000');
+			cell.attr('.label/cx', 30)
+			cell.attr('.label/cy', 30)
 		}
 
 	}
 	viewMode = 'SR';
 	$('#viewText').text('SR View');
+	// Show the boundary of actor in stencil too
+	act.attr('.outer/stroke', '#000000');
+	act.attr('.outer/fill', '#CCFFCC');
+	act.attr('.label/cx', 30)
+	act.attr('.label/cy', 30)
+
 	saveCookie();
 }
 // Enter SD View
@@ -635,11 +643,18 @@ function constructSDView(){
 		if (cell instanceof joint.shapes.basic.Actor){
 			cell.attr('.outer/fill', 'none');
 			cell.attr('.outer/stroke', 'none');
+			cell.attr('.label/cx', 60)
+			cell.attr('.label/cy', 60)
 		}
 
 	}
 	viewMode = 'SD';
 	$('#viewText').text('SD View');
+	// Hide the boundary of actor in stencil too
+	act.attr('.outer/stroke', 'none');
+	act.attr('.outer/fill', 'none');
+	act.attr('.label/cx', 60)
+	act.attr('.label/cy', 60)
 	saveCookie();
 }
 
