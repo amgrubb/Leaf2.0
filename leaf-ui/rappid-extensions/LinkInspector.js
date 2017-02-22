@@ -38,6 +38,12 @@ var LinkInspector = Backbone.View.extend({
     '</div>',
     '<br>'
   ].join(''),
+  dependencytemplate: [
+    '<label id="title">Dependency</label>',
+    '<br>',
+    '</div>',
+    '<br>'
+  ].join(''),
   errortemplate: [
     '<label id="title">Error</label>',
     '<br>',
@@ -47,7 +53,7 @@ var LinkInspector = Backbone.View.extend({
     '<br>'
   ].join(''),
   actortemplate: [
-      '<label> Link Type </label> <br>',
+      '<label> Actor Association Link </label> <br>',
       '<select class="sublink-type">',
         '<option value="is-a">is-a</option>',
         '<option value="participates-in">participates-in</option>',
@@ -68,29 +74,35 @@ var LinkInspector = Backbone.View.extend({
     this.relationTextB = ["Makes", "Breaks", "Helps", "Hurts"];
     this.relationValA = ["and", "or", "depends"];
     this.relationValB = ["makes", "breaks", "helps", "hurts"];
-    // select template
-    if (cell.prop("linktype")){
-      this.$el.html(_.template(this.actortemplate)());
-    }else{
-      // Choose template based on linktype: Contribution, refinement, error, neededby, qualification
-      switch(linktype){
-        case 'Contribution':
-          this.$el.html(_.template(this.contributiontemplate)());
-          break;
-        case 'Refinement':
-          this.$el.html(_.template(this.refinementtemplate)());
-          break;
-        case 'Qualification':
-          this.$el.html(_.template(this.qualificationtemplate)());
-          break;
-        case 'NeededBy':
-          this.$el.html(_.template(this.neededbytemplate)());
-          break;
-        default:
-          this.$el.html(_.template(this.errortemplate)());
-      }
 
+
+    // Choose template based on linktype: Contribution, refinement, error, neededby, qualification, actor or dependency
+    console.log(linktype);
+    switch(linktype){
+      case 'Contribution':
+        this.$el.html(_.template(this.contributiontemplate)());
+        break;
+      case 'Refinement':
+        this.$el.html(_.template(this.refinementtemplate)());
+        break;
+      case 'Qualification':
+        this.$el.html(_.template(this.qualificationtemplate)());
+        break;
+      case 'NeededBy':
+        this.$el.html(_.template(this.neededbytemplate)());
+        break;
+      case 'Actor':
+        this.$el.html(_.template(this.actortemplate)());
+        break;
+      case 'Dependency':
+        this.$el.html(_.template(this.dependencytemplate)());
+        break;
+
+      default:
+        this.$el.html(_.template(this.errortemplate)());
     }
+
+
 
     // already intialized previously
     if (cell.prop("sublink-type")){
