@@ -76,9 +76,11 @@ var goal = new joint.shapes.basic.Goal({ position: {x: 50, y: 20} });
 var task = new joint.shapes.basic.Task({ position: {x: 50, y: 100} });
 var quality = new joint.shapes.basic.Softgoal({ position: {x: 50, y: 170} });
 var res = new joint.shapes.basic.Resource({ position: {x: 50, y: 250} });
-var act = new joint.shapes.basic.Actor({ position: {x: 40, y: 400} });
+// This is actor without boundary
+var act2 = new joint.shapes.basic.Actor2({ position: {x: 60, y: 330} });
+var act = new joint.shapes.basic.Actor({ position: {x: 40, y: 430} });
 
-stencil.load([goal, task, quality, res, act]);
+stencil.load([goal, task, quality, res, act2, act]);
 
 //Setup LinkInspector
 $('.inspector').append(linkInspector.el);

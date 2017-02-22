@@ -184,3 +184,35 @@ joint.shapes.basic.Actor = joint.shapes.basic.Generic.extend({
         }
     }, joint.dia.Element.prototype.defaults)
 });
+// This is an actor without boundary
+joint.shapes.basic.Actor2 = joint.shapes.basic.Generic.extend({
+    markup: '<g class="scalable"><circle class = "outer"/></g><path class="line"/><text class = "name"/>',
+    defaults: joint.util.deepSupplement({
+        type: "basic.Actor2",
+        size: {
+            width: 80,
+            height: 80
+        },
+        attrs: {
+            ".outer": {
+                r: 60,
+                cx: 60,
+                cy: 60,
+                fill: '#FFFFA4',
+                stroke: '#000000'
+            },
+        
+            ".name": {
+                'text': 'Actor',
+                'fill': 'black',
+                'ref-y': '0.5',
+                'ref-x': '0.5',
+                'font-size': 10,
+                'x-alignment': 'middle',
+                'y-alignment': 'middle'
+            },
+            ".line": {
+            }
+        }
+    }, joint.dia.Element.prototype.defaults)
+});
