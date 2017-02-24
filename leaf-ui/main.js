@@ -31,7 +31,6 @@ var satvalues = {satisfied: 2, partiallysatisfied: 1, partiallydenied: -1, denie
 
 // Mode used specify layout and functionality of toolbars
 mode = "Modelling";		// 'Analysis' or 'Modelling'
-viewMode = 'SR'; // "SR" or "SD" view
 linkMode = "Relationships";	// 'Relationships' or 'Constraints'
 
 graph = new joint.dia.Graph();
@@ -117,18 +116,6 @@ if (document.cookie){
 		if (cookies[i].indexOf("graph=") >= 0){
 			prevgraph = cookies[i].substr(6);
 		}
-		// Get the previous mode from the cookie
-		if (cookies[i].indexOf("viewmode=") >= 0){
-			viewMode = cookies[i].slice(-2);
-			if (viewMode == 'SR'){
-				constructSRView();
-			}
-			else if (viewMode == 'SD'){
-				constructSDView();
-
-			}
-
-		}
 	}
 
 	if (prevgraph){
@@ -185,14 +172,12 @@ graph.on("add", function(cell){
 });
 
 //Auto-save the cookie whenever the graph is changed.
-// Auto-save the view mode (SR/SD) into the cookie as well.
 graph.on("change", function(){
 	saveCookie();
 });
 function saveCookie(){
 	var graphtext = JSON.stringify(graph.toJSON());
 	document.cookie = "graph=" + graphtext;
-	document.cookie = "viewmode = " + viewMode;
 }
 
 var selection = new Backbone.Collection();
@@ -471,7 +456,7 @@ paper.on('cell:pointerup', function(cellView, evt) {
 
 			if (ActorsBelow.length){
 				for (var a = 0; a < ActorsBelow.length; a++){
-					if (ActorsBelow[a].model instanceof joint.shapes.basic.Actor && viewMode == 'SR'){
+					if (ActorsBelow[a].model instanceof joint.shapes.basic.Actor){
 
 						ActorsBelow[a].model.embed(cell);
 					}
@@ -552,7 +537,7 @@ $('#btn-redo').on('click', _.bind(commandManager.redo, commandManager));
 $('#btn-clear-all').on('click', function(){
 	graph.clear();
 	//Delete cookie by setting expiry to past date
-	document.cookie='viewmode=SR; graph={}; expires=Thu, 18 Dec 2013 12:00:00 UTC;';
+	document.cookie='graph={}; expires=Thu, 18 Dec 2013 12:00:00 UTC;';
 });
 
 $('#btn-clear-elabel').on('click', function(){
@@ -630,78 +615,7 @@ $('#btn-fnt').on('click', function(){
 //Save in .leaf format
 $('#btn-save-leaf').on('click', saveLeaf);
 
-// When clicked, toggle between SR and SD view
-$('#view-btn').on('click', function(){
-	if (viewMode == 'SR'){
-		// Go to SD
-		constructSDView();
-	}
-	else if (viewMode == 'SD'){
-		// Go to SR
-		constructSRView();
-	}
 
-});
-// Enter SR view
-function constructSRView(){
-	var elements = graph.getElements();
-	for (var i = 0; i < elements.length; i++){
-		var cellView  = elements[i].findView(paper);
-		var cell = cellView.model;
-		if (cell.get('parent')){
-			elements[i].attr('./display', '');
-		}
-		// Restore the circle of Actor
-		if (cell instanceof joint.shapes.basic.Actor){
-			cell.attr('.outer/fill', '#CCFFCC');
-			cell.attr('.outer/stroke', '#000000');
-			cell.attr('.label/cx', 30);
-			cell.attr('.label/cy', 30);
-			cell.attr('.label/r', 30);
-		}
-
-	}
-	viewMode = 'SR';
-	$('#viewText').text('SR View');
-	// Show the boundary of actor in stencil too
-	act.attr('.outer/stroke', '#000000');
-	act.attr('.outer/fill', '#CCFFCC');
-	act.attr('.label/cx', 30);
-	act.attr('.label/cy', 30);
-	act.attr('.label/r', 30);
-
-	saveCookie();
-}
-// Enter SD View
-function constructSDView(){
-	var elements = graph.getElements();
-	for (var i = 0; i < elements.length; i++){
-		var cellView  = elements[i].findView(paper);
-		var cell = cellView.model;
-		// Hide all nodes that are inside actors
-		if (cell.get('parent')){
-			elements[i].attr('./display', 'none');
-		}
-		// Hide the circle of the actors
-		if (cell instanceof joint.shapes.basic.Actor){
-			cell.attr('.label/cx', 60);
-			cell.attr('.label/cy', 60);
-			cell.attr('.label/r', 60);
-			cell.attr('.outer/fill', 'none');
-			cell.attr('.outer/stroke', 'none');
-		}
-
-	}
-	viewMode = 'SD';
-	$('#viewText').text('SD View');
-	// Hide the boundary of actor in stencil too
-	act.attr('.label/cx', 60);
-	act.attr('.label/cy', 60);
-	act.attr('.label/r', 60);
-	act.attr('.outer/fill', 'none');
-	act.attr('.outer/stroke', 'none');
-	saveCookie();
-}
 
 //Simulator
 loader = document.getElementById("loader");
