@@ -226,6 +226,8 @@ paper.on('blank:pointerclick', function(){
 		var cellView  = elements[i].findView(paper);
 		cellView.unhighlight();
 	}
+	linkInspector.clear();
+	elementInspector.clear();
 });
 
 
