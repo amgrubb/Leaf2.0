@@ -489,7 +489,7 @@ paper.on('cell:pointerup', function(cellView, evt) {
 
 
 // Given a cell, search and highlight its root
-// This is a modified BFS alg ultilizing recursion
+// It ultilizes recursion
 // When first time calling it, originalCell is null
 // After that it is set to the cell that is being clicked on
 // This is to prevent searching in an cyclic graph
@@ -525,28 +525,40 @@ function searchRoot(cell, originalCell){
 	return;
 }
 // Definition of root: 
-// No outgoing refinement, contribution, qualification, neededby link
+// No outgoing refinement, contribution, neededby link
 // No incoming dependency , Actor link
 // No error link at all
 function isRoot(cell){
 	var outboundLinks = graph.getConnectedLinks(cell, {outbound: true});
 	var inboundLinks = graph.getConnectedLinks(cell, {inbound: true});
-	// If no outbound and inbound link, do not highlight anything
-	if (outboundLinks.length == 0 && inboundLinks.length == 0){
-		return false;
-	}
+	var inboundQualificationCount = 0;
+	var outboundQualificationCount = 0;
+	
 	for (var i = inboundLinks.length - 1; i >= 0; i--) {
 		var linkType = inboundLinks[i].attr('.link-type')
 		if (linkType == 'Error' || linkType == 'Dependency' || linkType == 'Actor' ){
 			return false;
 		}
+		if (linkType == 'Qualification'){
+			inboundQualificationCount = inboundQualificationCount + 1;
+		}
 	}
 
 	for (var i = outboundLinks.length - 1; i >= 0; i--) {
 		var linkType = outboundLinks[i].attr('.link-type')
-		if (linkType == 'Error' || (linkType != 'Dependency' && linkType != 'Actor' )){
+		if (linkType == 'Error' || (linkType != 'Dependency' && linkType != 'Actor' && linkType != 'Qualification')){
 			return false;
 		}
+
+		if (linkType == 'Qualification'){
+			outboundQualificationCount = outboundQualificationCount + 1;
+		}
+	}
+
+	// If no outbound and inbound link, do not highlight anything
+	// If all outbound links are qualification, and all inbound links are qualification, do not highlight anything
+	if (outboundLinks.length == outboundQualificationCount && inboundLinks.length == inboundQualificationCount){
+		return false;
 	}
 
 	return true;
@@ -556,7 +568,7 @@ function isRoot(cell){
 // We define a parent P as:
 // A dependency/actor link going from P to current node
 // Or
-// A refinement, contribution, qualification, neededby link from current node to P
+// A refinement, contribution, neededby link from current node to P
 function enQueue1(cell){
 	var queue = [];
 	var outboundLinks = graph.getConnectedLinks(cell, {outbound: true});
@@ -571,7 +583,7 @@ function enQueue1(cell){
 	
 	for (var i = outboundLinks.length - 1; i >= 0; i--) {
 		var linkType = outboundLinks[i].attr('.link-type')
-		if (linkType != 'Error' && linkType != 'Dependency' && linkType != 'Actor' ){
+		if (linkType != 'Error' && linkType != 'Dependency' && linkType != 'Actor' && linkType != 'Qualification'){
 			var targetCell = outboundLinks[i].getTargetElement();
 			queue.push(targetCell);
 		}
@@ -618,30 +630,40 @@ function searchLeaf(cell, originalCell){
 	return;
 }
 // Definition of leaf: 
-// No incoming refinement, contribution, qualification, neededby link
+// No incoming refinement, contribution, neededby link
 // No outgoing dependency , Actor link
 // No error link at all
 function isLeaf(cell){
 	var outboundLinks = graph.getConnectedLinks(cell, {outbound: true});
 	var inboundLinks = graph.getConnectedLinks(cell, {inbound: true});
+	var inboundQualificationCount = 0;
+	var outboundQualificationCount = 0;
 
-	// If no outbound and inbound link, do not highlight anything
-	if (outboundLinks.length == 0 && inboundLinks.length == 0){
-		return false;
-	}
 
 	for (var i = outboundLinks.length - 1; i >= 0; i--) {
 		var linkType = outboundLinks[i].attr('.link-type')
 		if (linkType == 'Error' || linkType == 'Dependency' || linkType == 'Actor' ){
 			return false;
 		}
+		if (linkType == 'Qualification'){
+			outboundQualificationCount = outboundQualificationCount + 1;
+		}
 	}
 
 	for (var i = inboundLinks.length - 1; i >= 0; i--) {
 		var linkType = inboundLinks[i].attr('.link-type')
-		if (linkType == 'Error' || (linkType != 'Dependency' && linkType != 'Actor' )){
+		if (linkType == 'Error' || (linkType != 'Dependency' && linkType != 'Actor' && linkType != 'Qualification')){
 			return false;
 		}
+		if (linkType == 'Qualification'){
+			inboundQualificationCount = inboundQualificationCount + 1;
+		}
+	}
+
+	// If no outbound and inbound link, do not highlight anything
+	// If all outbound links are qualification, and all inbound links are qualification, do not highlight anything
+	if (outboundLinks.length == outboundQualificationCount && inboundLinks.length == inboundQualificationCount){
+		return false;
 	}
 
 	return true;
@@ -666,7 +688,7 @@ function enQueue2(cell){
 	
 	for (var i = inboundLinks.length - 1; i >= 0; i--) {
 		var linkType = inboundLinks[i].attr('.link-type')
-		if (linkType != 'Error' && linkType != 'Dependency' && linkType != 'Actor' ){
+		if (linkType != 'Error' && linkType != 'Dependency' && linkType != 'Actor' && linkType != 'Qualification'){
 			var sourceCell = inboundLinks[i].getSourceElement();
 			queue.push(sourceCell);
 		}
