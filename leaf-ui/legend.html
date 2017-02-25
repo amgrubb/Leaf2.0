@@ -112,8 +112,66 @@
                 </td>
                 <td> Leaf node </td>
             </tr>
-
-
+            <tr>
+                <th>Link Type</th>
+                <th>Meaning</th>
+            </tr>
+            <tr>
+                <td> 
+                    <svg width="50" height="30">
+                        <path d='M 0 15 L 40 15 M 40 10 L 50 15 L 40 20' stroke='#000000'/>
+                    </svg>
+                </td>
+                <td> Refinement AND </td>
+            </tr>
+            <tr>
+                <td> 
+                    <svg width="50" height="30">
+                        <path d='M 0 15 L 50 15 M 40 10 L 40 20' stroke='#000000'/>
+                    </svg>
+                </td>
+                <td> Refinement OR </td>
+            </tr>
+            <tr>
+                <td> 
+                    <svg width="50" height="30">
+                        <path d='M 0 15 L 45 15 M42,15a3,3 0 1,0 6,0a3,3 0 1,0 -6,0' stroke='#000000'/>
+                    </svg>
+                </td>
+                <td> Needed By </td>
+            </tr>
+            <tr>
+                <td> 
+                    <svg width="50" height="30">
+                        <path d='M 0 15 L 50 15 M 45 9 L 50 15 L 45 21' stroke='#000000' fill='transparent'/>
+                    </svg>
+                </td>
+                <td> Contribution (Only when label is help, hurt, make, or break) </td>
+            </tr>
+            <tr>
+                <td> 
+                    <svg width="50" height="30">
+                        <path d='M 0 15 L 50 15' stroke='#000000' stroke-dasharray='5 2'/>
+                    </svg>
+                </td>
+                <td> Qualification </td>
+            </tr>
+            <tr>
+                <td> 
+                    <svg width="50" height="30">
+                        <path d='M 0 15 L 40 15 M 40 9 C 50 8, 50 22, 40 21 L 40 9 ' stroke='#000000' fill='transparent'/>
+                    </svg>
+                </td>
+                <td> Dependency </td>
+            </tr>
+            <tr>
+                <td> 
+                    <svg width="50" height="30">
+                        <path d='M 0 15 L 50 15 M 45 9 L 50 15 L 45 21' stroke='#000000' fill='transparent'/>
+                    </svg>
+                </td>
+                <td> Association (Only when label is participates-in, or is-a) </td>
+            </tr>
         </table>
         
     </body>
