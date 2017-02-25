@@ -224,7 +224,14 @@ paper.on('blank:pointerclick', function(){
 	var elements = graph.getElements();
 	for (var i = 0; i < elements.length; i++){
 		var cellView  = elements[i].findView(paper);
+		var cell = cellView.model;
 		cellView.unhighlight();
+		cell.attr('.outer/stroke', 'black');
+		cell.attr('.outer/stroke-width', '1');
+		if (cell instanceof joint.shapes.basic.Actor){
+			cell.attr('.outer/stroke-dasharray', '5 2');
+		}
+
 	}
 	linkInspector.clear();
 	elementInspector.clear();
@@ -435,9 +442,16 @@ paper.on('cell:pointerup', function(cellView, evt) {
 		for (var i = 0; i < elements.length; i++){
 			var cellview  = elements[i].findView(paper);
 			cellview.unhighlight();
+			cellview.model.attr('.outer/stroke', 'black');
+			cellview.model.attr('.outer/stroke-width', '1');
+			if (cellview.model instanceof joint.shapes.basic.Actor){
+				cellview.model.attr('.outer/stroke-dasharray', '5 2');
+			}
 		}
 		// Highlight when cell is clicked
 		cellView.highlight();
+		searchRoot(cell, null);
+		searchLeaf(cell, null);
 
 		currentHalo = new joint.ui.Halo({
 			graph: graph,
@@ -471,6 +485,199 @@ paper.on('cell:pointerup', function(cellView, evt) {
 	}
 });
 
+// ===================Search for root and leaf =====================
+
+
+// Given a cell, search and highlight its root
+// This is a modified BFS alg ultilizing recursion
+// When first time calling it, originalCell is null
+// After that it is set to the cell that is being clicked on
+// This is to prevent searching in an cyclic graph
+function searchRoot(cell, originalCell){
+	// If cellView = originalCell, we have a cycle
+	if (cell == originalCell){
+		return
+	}
+	// If first time calling it, set originalCell to cell
+	if (originalCell == null){
+		originalCell = cell;
+	}
+
+	// Highlight it when it is a root
+	if (isRoot(cell)){
+		cell.attr('.outer/stroke', '#996633');
+		cell.attr('.outer/stroke-width', '5');
+		cell.attr('.outer/stroke-dasharray', '');
+
+		return;
+	}
+	// A list of nodes to find next
+	var queue = enQueue1(cell);
+	// If no more node to search for, we are done
+	if (queue.length == 0){
+		return;
+	}
+	// Call searchRoot for all nodes in queue
+	for (var i = queue.length - 1; i >= 0; i--) {
+		searchRoot(queue[i], originalCell);
+	}
+
+	return;
+}
+// Definition of root: 
+// No outgoing refinement, contribution, qualification, neededby link
+// No incoming dependency , Actor link
+// No error link at all
+function isRoot(cell){
+	var outboundLinks = graph.getConnectedLinks(cell, {outbound: true});
+	var inboundLinks = graph.getConnectedLinks(cell, {inbound: true});
+	// If no outbound and inbound link, do not highlight anything
+	if (outboundLinks.length == 0 && inboundLinks.length == 0){
+		return false;
+	}
+	for (var i = inboundLinks.length - 1; i >= 0; i--) {
+		var linkType = inboundLinks[i].attr('.link-type')
+		if (linkType == 'Error' || linkType == 'Dependency' || linkType == 'Actor' ){
+			return false;
+		}
+	}
+
+	for (var i = outboundLinks.length - 1; i >= 0; i--) {
+		var linkType = outboundLinks[i].attr('.link-type')
+		if (linkType == 'Error' || (linkType != 'Dependency' && linkType != 'Actor' )){
+			return false;
+		}
+	}
+
+	return true;
+}
+// This is for searchRoot function
+// Given a cell, find a list of all "parent" cells for searchRoot to search next
+// We define a parent P as:
+// A dependency/actor link going from P to current node
+// Or
+// A refinement, contribution, qualification, neededby link from current node to P
+function enQueue1(cell){
+	var queue = [];
+	var outboundLinks = graph.getConnectedLinks(cell, {outbound: true});
+	var inboundLinks = graph.getConnectedLinks(cell, {inbound: true});
+	for (var i = inboundLinks.length - 1; i >= 0; i--) {
+		var linkType = inboundLinks[i].attr('.link-type')
+		if (linkType == 'Dependency' || linkType == 'Actor'){
+			var sourceCell = inboundLinks[i].getSourceElement();
+			queue.push(sourceCell);
+		}
+	}
+	
+	for (var i = outboundLinks.length - 1; i >= 0; i--) {
+		var linkType = outboundLinks[i].attr('.link-type')
+		if (linkType != 'Error' && linkType != 'Dependency' && linkType != 'Actor' ){
+			var targetCell = outboundLinks[i].getTargetElement();
+			queue.push(targetCell);
+		}
+	}
+	return queue;
+
+}
+
+
+// Given a cell, search and highlight its leaf
+// This is a modified BFS alg ultilizing recursion
+// When first time calling it, originalCell is null
+// After that it is set to the cell that is being clicked on
+// This is to prevent searching in an cyclic graph
+function searchLeaf(cell, originalCell){
+	// If cellView = originalCell, we have a cycle
+	if (cell == originalCell){
+		return
+	}
+	// If first time calling it, set originalCell to cell
+	if (originalCell == null){
+		originalCell = cell;
+	}
+
+	// Highlight it when it is a leaf
+	if (isLeaf(cell)){
+		cell.attr('.outer/stroke', '#339933');
+		cell.attr('.outer/stroke-width', '5');
+		cell.attr('.outer/stroke-dasharray', '');
+
+		return;
+	}
+	// A list of nodes to find next
+	var queue = enQueue2(cell);
+	// If no more node to search for, we are done
+	if (queue.length == 0){
+		return;
+	}
+	// Call searchLeaf for all nodes in queue
+	for (var i = queue.length - 1; i >= 0; i--) {
+		searchLeaf(queue[i], originalCell);
+	}
+
+	return;
+}
+// Definition of leaf: 
+// No incoming refinement, contribution, qualification, neededby link
+// No outgoing dependency , Actor link
+// No error link at all
+function isLeaf(cell){
+	var outboundLinks = graph.getConnectedLinks(cell, {outbound: true});
+	var inboundLinks = graph.getConnectedLinks(cell, {inbound: true});
+
+	// If no outbound and inbound link, do not highlight anything
+	if (outboundLinks.length == 0 && inboundLinks.length == 0){
+		return false;
+	}
+
+	for (var i = outboundLinks.length - 1; i >= 0; i--) {
+		var linkType = outboundLinks[i].attr('.link-type')
+		if (linkType == 'Error' || linkType == 'Dependency' || linkType == 'Actor' ){
+			return false;
+		}
+	}
+
+	for (var i = inboundLinks.length - 1; i >= 0; i--) {
+		var linkType = inboundLinks[i].attr('.link-type')
+		if (linkType == 'Error' || (linkType != 'Dependency' && linkType != 'Actor' )){
+			return false;
+		}
+	}
+
+	return true;
+}
+// This is for searchLeaf function
+// Given a cell, find a list of all "parent" cells for searchLeaf to search next
+// We define a children C as:
+// A dependency/actor link going from current node to C
+// Or
+// A refinement, contribution, qualification, neededby link from C to current node
+function enQueue2(cell){
+	var queue = [];
+	var outboundLinks = graph.getConnectedLinks(cell, {outbound: true});
+	var inboundLinks = graph.getConnectedLinks(cell, {inbound: true});
+	for (var i = outboundLinks.length - 1; i >= 0; i--) {
+		var linkType = outboundLinks[i].attr('.link-type')
+		if (linkType == 'Dependency' || linkType == 'Actor'){
+			var targetCell = outboundLinks[i].getTargetElement();
+			queue.push(targetCell);
+		}
+	}
+	
+	for (var i = inboundLinks.length - 1; i >= 0; i--) {
+		var linkType = inboundLinks[i].attr('.link-type')
+		if (linkType != 'Error' && linkType != 'Dependency' && linkType != 'Actor' ){
+			var sourceCell = inboundLinks[i].getSourceElement();
+			queue.push(sourceCell);
+		}
+	}
+	return queue;
+
+}
+
+
+
+// ====================================================================
 graph.on('change:size', function(cell, size){
 	cell.attr(".label/cx", 0.25 * size.width);
 
