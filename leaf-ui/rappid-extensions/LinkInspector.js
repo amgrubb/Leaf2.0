@@ -127,21 +127,21 @@ var LinkInspector = Backbone.View.extend({
     this._cellView.model.prop("sublink-type", this.$('.sublink-type').val());
     var linktype = link.attr(".link-type");
     if (linktype == "Refinement"){
-      if (this._cellView.model.prop("sublink-type") == 'or'){
+      if (this._cellView.model.prop("sublink-type") == 'and'){
         link.attr({
           '.connection': {stroke: '#000000', 'stroke-dasharray': '0 0'},
           '.marker-source': {'d': 'M 0 0'},
           '.marker-target': {stroke: '#000000', 'stroke-width': 1, "d": 'M 10 0 L 10 10 M 10 5 L 0 5' }
         });
-        link.label(0 ,{position: 0.5, attrs: {text: {text: 'or'}}});
+        link.label(0 ,{position: 0.5, attrs: {text: {text: 'and'}}});
       
-      }else if (this._cellView.model.prop("sublink-type") == 'and'){
+      }else if (this._cellView.model.prop("sublink-type") == 'or'){
         link.attr({
           '.connection': {stroke: '#000000', 'stroke-dasharray': '0 0'},
           '.marker-source': {'d': 'M 0 0'},
           '.marker-target': {stroke: '#000000', "d": 'M 10 0 L 0 5 L 10 10 z'}
         });
-        link.label(0 ,{position: 0.5, attrs: {text: {text: 'and'}}});
+        link.label(0 ,{position: 0.5, attrs: {text: {text: 'or'}}});
       }
       else {
         console.log('Error, this should not happen');
