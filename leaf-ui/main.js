@@ -73,7 +73,7 @@ $('#stencil').append(stencil.render().el);
 
 var goal = new joint.shapes.basic.Goal({ position: {x: 50, y: 20} });
 var task = new joint.shapes.basic.Task({ position: {x: 50, y: 100} });
-var quality = new joint.shapes.basic.Softgoal({ position: {x: 50, y: 170} });
+var quality = new joint.shapes.basic.Quality({ position: {x: 50, y: 170} });
 var res = new joint.shapes.basic.Resource({ position: {x: 50, y: 250} });
 // This is actor without boundary
 var act2 = new joint.shapes.basic.Actor2({ position: {x: 60, y: 330} });
@@ -311,7 +311,7 @@ function setLinkType(link){
 		case ((sourceCell == "basic.Goal") && (targetCell == "basic.Goal")):
 			link.attr(".link-type", "Refinement");
 			break;
-		case ((sourceCell == "basic.Goal") && (targetCell == "basic.Softgoal")):
+		case ((sourceCell == "basic.Goal") && (targetCell == "basic.Quality")):
 			link.attr(".link-type", "Contribution");
 			break;
 		case ((sourceCell == "basic.Goal") && (targetCell == "basic.Task")):
@@ -320,22 +320,22 @@ function setLinkType(link){
 		case ((sourceCell == "basic.Goal") && (targetCell == "basic.Resource")):
 			link.attr(".link-type", "Error");
 			break;
-		case ((sourceCell == "basic.Softgoal") && (targetCell == "basic.Goal")):
+		case ((sourceCell == "basic.Quality") && (targetCell == "basic.Goal")):
 			link.attr(".link-type", "Qualification");
 			break;
-		case ((sourceCell == "basic.Softgoal") && (targetCell == "basic.Softgoal")):
+		case ((sourceCell == "basic.Quality") && (targetCell == "basic.Quality")):
 			link.attr(".link-type", "Contribution");
 			break;
-		case ((sourceCell == "basic.Softgoal") && (targetCell == "basic.Task")):
+		case ((sourceCell == "basic.Quality") && (targetCell == "basic.Task")):
 			link.attr(".link-type", "Qualification");
 			break;
-		case ((sourceCell == "basic.Softgoal") && (targetCell == "basic.Resource")):
+		case ((sourceCell == "basic.Quality") && (targetCell == "basic.Resource")):
 			link.attr(".link-type", "Qualification");
 			break;
 		case ((sourceCell == "basic.Task") && (targetCell == "basic.Goal")):
 			link.attr(".link-type", "Refinement");
 			break;
-		case ((sourceCell == "basic.Task") && (targetCell == "basic.Softgoal")):
+		case ((sourceCell == "basic.Task") && (targetCell == "basic.Quality")):
 			link.attr(".link-type", "Contribution");
 			break;
 		case ((sourceCell == "basic.Task") && (targetCell == "basic.Task")):
@@ -347,7 +347,7 @@ function setLinkType(link){
 		case ((sourceCell == "basic.Resource") && (targetCell == "basic.Goal")):
 			link.attr(".link-type", "Error");
 			break;
-		case ((sourceCell == "basic.Resource") && (targetCell == "basic.Softgoal")):
+		case ((sourceCell == "basic.Resource") && (targetCell == "basic.Quality")):
 			link.attr(".link-type", "Contribution");
 			break;
 		case ((sourceCell == "basic.Resource") && (targetCell == "basic.Task")):
@@ -530,7 +530,7 @@ function searchRoot(cell, originalCell){
 
 	return;
 }
-// Definition of root: 
+// Definition of root:
 // No outgoing refinement, contribution, neededby link
 // No incoming dependency , Actor link
 // No error link at all
@@ -1005,7 +1005,7 @@ function generateLeafFile(){
 		  	datastring += "G\t";
 		else if (elements[e] instanceof joint.shapes.basic.Task)
 		  	datastring += "T\t";
-		else if (elements[e] instanceof joint.shapes.basic.Softgoal)
+		else if (elements[e] instanceof joint.shapes.basic.Quality)
 		  	datastring += "S\t";
 		else if (elements[e] instanceof joint.shapes.basic.Resource)
 		  	datastring += "R\t";

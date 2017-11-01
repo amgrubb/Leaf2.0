@@ -32,7 +32,7 @@ var logObject = function(analysis, sliderBegin){
 	this.analysisLength;
 }
 
-// Used to save analysis results 
+// Used to save analysis results
 function analysisObject () {
     this.type;
     this.elements;
@@ -46,7 +46,7 @@ analysisObject.initFromBackEnd = function(analysisResults, analysisType){
 	this.elements = [];
 	this.numOfElements = Number(analysisResults[0]);
 	this.timeScale = Number(analysisResults[1]) - 1;
-	
+
 	for (var i = 2; i < this.numOfElements + 2; i++){
 		//strips first element since it is already shown on graph
 		var results = analysisResults[i].split('\t');
@@ -75,7 +75,7 @@ var queryObject = function(){
 	this.intentionColor = {
 		"Goal": '#FFCC66',
 		"Task": '#92E3B1',
-		"Softgoal": '#FF984F',
+		"Quality": '#FF984F',
 		"Resource": '#92C2FE'
 	};
 
@@ -209,10 +209,10 @@ var chartObject = function(){
 		tooltipTemplate: "",
 		multiTooltipTemplate: "",
 		scaleLabel: "<%if (value == 2)%><%= 'S' %><%if (value == 1)%><%= 'PS' %><%if (value == 0)%><%= 'R/S' %><%if (value == -1)%><%= 'PD' %><%if (value == -2)%><%= 'D' %>",
-		
+
 		// The following two lings controls effects of hovering over an element on chart
 		// tooltipTemplate: "<%if (value == 2)%><%= 'Satisfied' %><%if (value == 1)%><%= 'Partially Satisfied' %><%if (value == 0)%><%= 'Random' %><%if (value == -1)%><%= 'Partially Denied' %><%if (value == -2)%><%= 'Denied' %>",
-		// multiTooltipTemplate: "<%if (value == 2)%><%= 'Satisfied' %><%if (value == 1)%><%= 'Partially Satisfied' %><%if (value == 0)%><%= 'Random' %><%if (value == -1)%><%= 'Partially Denied' %><%if (value == -2)%><%= 'Denied' %>",		
+		// multiTooltipTemplate: "<%if (value == 2)%><%= 'Satisfied' %><%if (value == 1)%><%= 'Partially Satisfied' %><%if (value == 0)%><%= 'Random' %><%if (value == -1)%><%= 'Partially Denied' %><%if (value == -2)%><%= 'Denied' %>",
 	};
 
 
@@ -227,7 +227,7 @@ var chartObject = function(){
 		scaleFontSize: 10,
 		pointHitDetectionRadius : 5,
 		tooltipTemplate: "<%if (value == 2)%><%= 'Satisfied' %><%if (value == 1)%><%= 'Partially Satisfied' %><%if (value == 0)%><%= 'Random' %><%if (value == -1)%><%= 'Partially Denied' %><%if (value == -2)%><%= 'Denied' %>",
-		multiTooltipTemplate: "<%= datasetLabel %> - <%if (value == 2)%><%= 'Satisfied' %><%if (value == 1)%><%= 'Partially Satisfied' %><%if (value == 0)%><%= 'Random' %><%if (value == -1)%><%= 'Partially Denied' %><%if (value == -2)%><%= 'Denied' %>",		
-		scaleLabel: "<%if (value == 2)%><%= 'S' %><%if (value == 1)%><%= 'PS' %><%if (value == 0)%><%= 'R/S' %><%if (value == -1)%><%= 'PD' %><%if (value == -2)%><%= 'D' %>",		
+		multiTooltipTemplate: "<%= datasetLabel %> - <%if (value == 2)%><%= 'Satisfied' %><%if (value == 1)%><%= 'Partially Satisfied' %><%if (value == 0)%><%= 'Random' %><%if (value == -1)%><%= 'Partially Denied' %><%if (value == -2)%><%= 'Denied' %>",
+		scaleLabel: "<%if (value == 2)%><%= 'S' %><%if (value == 1)%><%= 'PS' %><%if (value == 0)%><%= 'R/S' %><%if (value == -1)%><%= 'PD' %><%if (value == -2)%><%= 'D' %>",
 	};
 }
