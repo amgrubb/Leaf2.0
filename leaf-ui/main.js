@@ -397,9 +397,10 @@ function drawDefaultLink(link, linktype){
 		case "Dependency":
 			link.attr({
 				'.marker-source': {'d': 'M 0 0'},
-				'.marker-target': {'d': 'M 100 0 C 85 -5, 85 20, 100 15 L 100 0 M -100 0' ,'fill': 'transparent'},
+				//'.marker-target': {'d': 'M 100 0 C 85 -5, 85 20, 100 15 L 100 0 M -100 0' ,'fill': 'transparent'}, //Old
+        '.marker-target': {'d': 'M 100 0 C 85 -5, 85 20, 100 15 L 100 0','fill': 'transparent'},
 			})
-			link.label(0 ,{position: 0.5, attrs: {text: {text: ""}}});
+      link.label(0 ,{position: 0.5, attrs: {text: {text: "depends"}}});
 			break;
 		case "Actor":
 			link.label(0 ,{position: 0.5, attrs: {text: {text: 'is-a'}}});
@@ -538,7 +539,7 @@ function isRoot(cell){
 	var inboundLinks = graph.getConnectedLinks(cell, {inbound: true});
 	var inboundQualificationCount = 0;
 	var outboundQualificationCount = 0;
-	
+
 	for (var i = inboundLinks.length - 1; i >= 0; i--) {
 		var linkType = inboundLinks[i].attr('.link-type')
 		if (linkType == 'Error' || linkType == 'Dependency' || linkType == 'Actor' ){
@@ -585,7 +586,7 @@ function enQueue1(cell){
 			queue.push(sourceCell);
 		}
 	}
-	
+
 	for (var i = outboundLinks.length - 1; i >= 0; i--) {
 		var linkType = outboundLinks[i].attr('.link-type')
 		if (linkType != 'Error' && linkType != 'Dependency' && linkType != 'Actor' && linkType != 'Qualification'){
@@ -634,7 +635,7 @@ function searchLeaf(cell, originalCell){
 
 	return;
 }
-// Definition of leaf: 
+// Definition of leaf:
 // No incoming refinement, contribution, neededby link
 // No outgoing dependency , Actor link
 // No error link at all
@@ -690,7 +691,7 @@ function enQueue2(cell){
 			queue.push(targetCell);
 		}
 	}
-	
+
 	for (var i = inboundLinks.length - 1; i >= 0; i--) {
 		var linkType = inboundLinks[i].attr('.link-type')
 		if (linkType != 'Error' && linkType != 'Dependency' && linkType != 'Actor' && linkType != 'Qualification'){
