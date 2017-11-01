@@ -1,15 +1,15 @@
-/* *** Code Inconsistent with Rappid Distribution *** 
+/* *** Code Inconsistent with Rappid Distribution ***
  * J.Fear - Aug. 2015
- * The following functions differs from the Rappid release. These functions did not exist in the Rappid Library. 
+ * The following functions differs from the Rappid release. These functions did not exist in the Rappid Library.
  * 		joint.shapes.basic.Intention: Is the superclass for all added nodes (goals, subgoals, tasks, resources).
  * 		joint.shapes.basic.Goal: Goal node.
  * 		joint.shapes.basic.Task: Task node.
- * 		joint.shapes.basic.Softgoal: Softgoal node.
+ * 		joint.shapes.basic.Quality: Quality node.
  * 		joint.shapes.basic.Resource: Resource node.
  * 		joint.dia.Actorlink: Link between actors.
  * 		joint.shapes.basic.Actor: Actor node.
  *
- */ 
+ */
 joint.shapes.basic.Intention = joint.shapes.basic.Generic.extend({
 	markup: '<g class="rotatable"><g class="scalable"><rect class="outer"/></g><path class="satvalue"/><text class="funcvalue"/><text class="name"/></g>',
 	defaults: joint.util.deepSupplement({
@@ -24,7 +24,7 @@ joint.shapes.basic.Intention = joint.shapes.basic.Generic.extend({
                 height: 60
             },
             ".satvalue": {
-              	'stroke': '#FFFF00', 
+              	'stroke': '#FFFF00',
             	'stroke-width': 4,
             	'value': 'none'
             },
@@ -74,11 +74,11 @@ joint.shapes.basic.Task = joint.shapes.basic.Intention.extend({
         type: "basic.Task",
         attrs: {
             ".outer": {
-            	
-            	d: 'M 0 30 L 20 0 L 80 0 L 100 30 L 80 60 L 20 60 z', 
+
+            	d: 'M 0 30 L 20 0 L 80 0 L 100 30 L 80 60 L 20 60 z',
             	fill: '#92E3B1',
             	stroke: 'black',
-            	'stroke-width': 1 
+            	'stroke-width': 1
             },
             ".satvalue": {
             	'ref-y': '0.75',
@@ -95,10 +95,10 @@ joint.shapes.basic.Task = joint.shapes.basic.Intention.extend({
     }, joint.shapes.basic.Intention.prototype.defaults)
 });
 
-joint.shapes.basic.Softgoal = joint.shapes.basic.Intention.extend({
+joint.shapes.basic.Quality = joint.shapes.basic.Intention.extend({
     markup: '<g class="rotatable"><g class="scalable"><path class="outer"/></g><path class="satvalue"/><text class="funcvalue"/><text class="name"/></g>',
     defaults: joint.util.deepSupplement({
-        type: "basic.Softgoal",
+        type: "basic.Quality",
         attrs: {
             ".outer": {
             	d: 'M 0 20 Q 5 0 45 5 Q 55 10 65 5 Q 95 0 100 15 L 100 30 Q 100 50 80 50 L 75, 50 Q 66 50 55 47 Q 45 45 35 47 Q 25 50 15 50 L 10 50 Q 0 45 0 25 z',
@@ -168,7 +168,7 @@ joint.shapes.basic.Actor = joint.shapes.basic.Generic.extend({
             	stroke: '#000000',
             	'stroke-dasharray': '5 2'
             },
-        
+
             ".name": {
             	'text': 'Actor',
             	'fill': 'black',
