@@ -796,6 +796,10 @@ $('#btn-svg').on('click', function() {
 	paper.openAsSVG();
 });
 
+$('#btn-png').on('click', function() {
+	paper.openAsPNG();
+});
+
 $('#btn-zoom-in').on('click', function() {
 	paperScroller.zoom(0.2, { max: 3 });
 });
