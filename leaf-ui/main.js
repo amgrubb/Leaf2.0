@@ -456,8 +456,8 @@ paper.on('cell:pointerup', function(cellView, evt) {
 		}
 		// Highlight when cell is clicked
 		cellView.highlight();
-		searchRoot(cell, null);
-		searchLeaf(cell, null);
+		searchRoot(cell, null, null);
+		searchLeaf(cell, null, null);
 
 		currentHalo = new joint.ui.Halo({
 			graph: graph,
@@ -499,16 +499,19 @@ paper.on('cell:pointerup', function(cellView, evt) {
 // When first time calling it, originalCell is null
 // After that it is set to the cell that is being clicked on
 // This is to prevent searching in an cyclic graph
-function searchRoot(cell, originalCell){
+function searchRoot(cell, originalCell, path){
 	// If cellView = originalCell, we have a cycle
 	if (cell == originalCell){
-		return
+		return;
 	}
 	// If first time calling it, set originalCell to cell
 	if (originalCell == null){
 		originalCell = cell;
 	}
-
+	// if path is null, then create an empty array 
+	if (path == null) {
+		var path = [];
+	}
 	// Highlight it when it is a root
 	if (isRoot(cell)){
 		cell.attr('.outer/stroke', '#996633');
@@ -523,9 +526,19 @@ function searchRoot(cell, originalCell){
 	if (queue.length == 0){
 		return;
 	}
+	// append all elements in queue to the path
+	path.push(cell)
+	// check all elements in the path to see whether the cycle exist
+	for (var i = path.length - 1; i >= 0; i--) {
+		for (var p = i - 1; p >= 0; p--) {
+			if (path[i] == path[p]) {
+				return;
+			}
+		}	
+	}
 	// Call searchRoot for all nodes in queue
 	for (var i = queue.length - 1; i >= 0; i--) {
-		searchRoot(queue[i], originalCell);
+		searchRoot(queue[i], originalCell, path);
 	}
 
 	return;
@@ -604,16 +617,19 @@ function enQueue1(cell){
 // When first time calling it, originalCell is null
 // After that it is set to the cell that is being clicked on
 // This is to prevent searching in an cyclic graph
-function searchLeaf(cell, originalCell){
+function searchLeaf(cell, originalCell, path){
 	// If cellView = originalCell, we have a cycle
 	if (cell == originalCell){
-		return
+		return;
 	}
 	// If first time calling it, set originalCell to cell
 	if (originalCell == null){
 		originalCell = cell;
 	}
-
+	// if path is null, then create an empty array 
+	if (path == null) {
+		var path = [];
+	}
 	// Highlight it when it is a leaf
 	if (isLeaf(cell)){
 		cell.attr('.outer/stroke', '#339933');
@@ -628,9 +644,19 @@ function searchLeaf(cell, originalCell){
 	if (queue.length == 0){
 		return;
 	}
+	// append all elements in queue to the path
+	path.push(cell)
+	// check all elements in the path to see whether the cycle exist
+	for (var i = path.length - 1; i >= 0; i--) {
+		for (var p = i - 1; p >= 0; p--) {
+			if (path[i] == path[p]) {
+				return;
+			}
+		}
+	}
 	// Call searchLeaf for all nodes in queue
 	for (var i = queue.length - 1; i >= 0; i--) {
-		searchLeaf(queue[i], originalCell);
+		searchLeaf(queue[i], originalCell, path);
 	}
 
 	return;
