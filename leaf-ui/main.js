@@ -1059,3 +1059,9 @@ function generateLeafFile(){
 	console.log(datastring);
 	return datastring
 }
+
+// ----------------------------------------------------------------- //
+// When Clear Labels button is pressed
+$('#clearlabel-btn').on('click', function(){
+	elementInspector.clearCell();
+});
