@@ -20,10 +20,53 @@ var loader;
 var reader;
 
 //Properties for both core and simulator.
-var satvalues = {satisfied: 2, partiallysatisfied: 1, partiallydenied: -1, denied: -2, unknown: 0, conflict: 3, none: 4};
-
-//var functions = {A: 'AI', O: 'OI', N: 'NT', M: 'MP', R: 'R', S: 'SP', MN: 'MN', SN: 'SN', U: 'UD'};
-
+// var satvalues = {satisfied: 2, partiallysatisfied: 1, partiallydenied: -1, denied: -2, unknown: 0, conflict: 3, none: 4};
+var satValueDict = {
+	"unknown": 5,
+	"satisfied": 3,
+	"partiallysatisfied": 2,
+	"partiallydenied": 1,
+	"denied": 0,
+	"conflict": 4,
+	"none": 6
+};
+const D = satValueDict['denied'];
+const PD = satValueDict['partiallydenied'];
+const PS = satValueDict['partiallysatisfied'];
+const S = satValueDict['satisfied'];
+const C = satValueDict['conflict'];
+const U = satValueDict['unknown'];
+const N = satValueDict['none'];
+const weightedContributionFunction = [
+	// M, H+, s+,  u, s-, H-,  B
+	[ D, PD, PD,  N, PS, PS, PS ], // D		// Last column PS for i* and S for GRL.
+	[ PD, PD, PD,  N, PS, PS, PS ], // PD
+	[ PS, PS, PS,  N, PD, PD, PD ], // PS
+	[  S, PS, PS,  N, PD, PD,  D ], // S
+	[  U,  U,  U,  U,  U,  U,  U ], // C
+	[  U,  U,  U,  U,  U,  U,  U ], // U
+	[  N,  N,  N,  N,  N,  N,  N ], // N
+];
+const combineContributionsFunction = [ 
+	// D, PD, PS,  S,  C,  U,  N  
+	[  D,  D, PD,  C,  C,  U,  D ], // D
+	[  D, PD,  U, PS,  C,  U, PD ], // PD		PD + PS -> U was originally N. Changed for controlled experiment.
+	[ PD,  U, PS,  S,  C,  U, PS ], // PS
+	[  C, PS,  S,  S,  C,  U,  S ], // S
+	[  C,  C,  C,  C,  C,  C,  C ], // C
+	[  U,  U,  U,  U,  C,  U,  U ], // U
+	[  D, PD, PS,  S,  C,  U,  N ], // N
+];
+const combinePreconditionFunction = [ //row = previous-value col = min-precondition
+	// D, PD, PS,  S,  C,  U,  N  
+	[  D,  D,  D,  D,  C,  U,  D ], // D	
+	[  D,  D,  D, PD,  C,  U, PD ], // PD
+	[  D,  D,  D, PS,  C,  U, PS ], // PS
+	[  D,  D,  S,  S,  C,  U,  S ], // S
+	[  C,  C,  C,  C,  C,  C,  C ], // C
+	[  D,  D,  D,  U,  C,  U,  U ], // U
+	[  D,  D,  D,  S,  C,  U,  N ], // N
+];
 
 // ----------------------------------------------------------------- //
 // Page setup
@@ -105,8 +148,6 @@ if (document.cookie){
 
 
 }
-
-
 
 // ----------------------------------------------------------------- //
 // Rappid setup
@@ -892,155 +933,6 @@ function download(filename, text) {
 	document.body.removeChild(dl);
 }
 
-
-// Generates file needed for backend analysis
-function generateLeafFile(){
-
-	//Step 0: Get elements from graph.
-	var all_elements = graph.getElements();
-	var savedLinks = [];
-	var savedConstraints = [];
-
-	if (linkMode == "Relationships"){
-		savedConstraints = graphObject.intensionConstraints;
-		var links = graph.getLinks();
-	    links.forEach(function(link){
-	        if(!isLinkInvalid(link)){
-				if (link.attr('./display') != "none")
-	        		savedLinks.push(link);
-	        }
-	        else{link.remove();}
-	    });
-	}else if (linkMode == "Constraints"){
-		savedLinks = graphObject.links;
-		var betweenIntensionConstraints = graph.getLinks();
-	    betweenIntensionConstraints.forEach(function(link){
-			var linkStatus = link.attributes.labels[0].attrs.text.text.replace(/\s/g, '');
-	        if(!isLinkInvalid(link) && (linkStatus != "constraint") && (linkStatus != "error")){
-				if (link.attr('./display') != "none")
-					savedConstraints.push(link);
-	        }
-	        else{link.remove();}
-	    });
-	}
-
-	//Step 1: Filter out Actors
-	var elements = [];
-	var actors = [];
-	for (var e1 = 0; e1 < all_elements.length; e1++){
-		if (!(all_elements[e1] instanceof joint.shapes.basic.Actor)){
-			elements.push(all_elements[e1]);
-		}
-		else{
-			actors.push(all_elements[e1]);
-		}
-	}
-
-	//save elements in global variable for slider, used for toBackEnd funciton only
-	graphObject.allElements = elements;
-	graphObject.elementsBeforeAnalysis = elements;
-
-	var datastring = actors.length + "\n";
-	//print each actor in the model
-	for (var a = 0; a < actors.length; a++){
-		var actorId = a.toString();
-		while (actorId.length < 3){ actorId = "0" + actorId;}
-		actorId = "a" + actorId;
-		actors[a].prop("elementid", actorId);
-		datastring += ("A\t" + actorId + "\t" + actors[a].attr(".name/text") + "\t" + (actors[a].prop("actortype") || "A") + "\n");
-	}
-
-
-	// Step 2: Print each element in the model
-
-	// conversion between values used in Element Inspector with values used in backend
-	var satValueDict = {
-		"unknown": 5,
-		"satisfied": 3,
-		"partiallysatisfied": 2,
-		"partiallydenied": 1,
-		"denied": 0,
-		"conflict": 4,
-		"none": 6
-	}
-	datastring += elements.length + "\n";
-	for (var e = 0; e < elements.length; e++){
-		//var id = e.toString();
-		//while (id.length < 4){ id = "0" + id;}
-		//elements[e].prop("elementid", id);
-		var elementID = e.toString();
-		while (elementID.length < 4){ elementID = "0" + elementID;}
-		elements[e].prop("elementid", elementID);
-
-		var actorid = '-';
-		if (elements[e].get("parent")){
-			actorid = (graph.getCell(elements[e].get("parent")).prop("elementid") || "-");
-		}
-		console.log(actorid);
-
-	// Print NT in "core" of tool where time does not exist.
-	//datastring += ("I\t" + actorid + "\t" + elementID + "\t" + (functions[elements[e].attr(".funcvalue/text")] || "NT") + "\t");
-
-	    datastring += ("I\t" + actorid + "\t" + elementID + "\t");
-		if (elements[e] instanceof joint.shapes.basic.Goal)
-		  	datastring += "G\t";
-		else if (elements[e] instanceof joint.shapes.basic.Task)
-		  	datastring += "T\t";
-		else if (elements[e] instanceof joint.shapes.basic.Quality)
-		  	datastring += "S\t";
-		else if (elements[e] instanceof joint.shapes.basic.Resource)
-		  	datastring += "R\t";
-		else
-	  		datastring += "I\t";
-
-	  	var v = elements[e].attr(".satvalue/value")
-
-	  	// treat satvalue as unknown if it is not yet defined
-	  	if((!v) || (v == "none"))
-			v = "none";
-
-		datastring += satValueDict[v];
-		datastring += "\t" + elements[e].attr(".name/text").replace(/\n/g, " ") + "\n";
-	}
-
-
-	//Step 3: Print each link in the model
-	for (var l = 0; l < savedLinks.length; l++){
-		var current = savedLinks[l];
-		var relationship = current.label(0).attrs.text.text.toUpperCase()
-		var source = "-";
-		var target = "-";
-
-		if (current.get("source").id)
-			source = graph.getCell(current.get("source").id).prop("elementid");
-		if (current.get("target").id)
-			target = graph.getCell(current.get("target").id).prop("elementid");
-
-		if (relationship.indexOf("|") > -1){
-			evolvRelationships = relationship.replace(/\s/g, '').split("|");
-			datastring += 'L\t' + evolvRelationships[0] + '\t' + source + '\t' + target + '\t' + evolvRelationships[1] + "\n";
-		}else{
-			datastring += 'L\t' + relationship + '\t' + source + '\t' + target + "\n";
-		}
-	}
-
-
-	//Step 4: Print constraints between intensions.
-	for (var e = 0; e < savedConstraints.length; e++){
-		var c = savedConstraints[e];
-		var type = c.attributes.labels[0].attrs.text.text.replace(/\s/g, '');
-		var source = c.getSourceElement().attributes.elementid;
-		var target = c.getTargetElement().attributes.elementid;
-		var sourceVar = c.attr('.constraintvar/src');
-		var targetVar = c.attr('.constraintvar/tar');
-
-		datastring += ("C\t" + type + "\t" + source + "\t" + sourceVar + "\t" + target + "\t" + targetVar + "\n");
-	}
-
-	console.log(datastring);
-	return datastring
-}
-
 // ----------------------------------------------------------------- //
 // When Clear Labels button is pressed
 $('#clearlabel-btn').on('click', function(){
@@ -1054,7 +946,80 @@ $('#frd-analysis-btn').on('click', function(){
 	// propogation
 	// analysis
 	// Question: how do you update the drawing and also the elementInspector value together
-	
+	// TODO: Check to make sure there are not nodes that have more than one type of Decomposition (AND/OR/XOR) connected to them.
+	// TODO: This doesn't work in the growingleaf tool
+	var all_elements = graph.getElements();
+	// update all links
+	var savedLinks = [];
+	if (linkMode == "Relationships"){
+		savedConstraints = graphObject.intensionConstraints;
+		var links = graph.getLinks();
+	    links.forEach(function(link){
+	        if(!isLinkInvalid(link)){
+				if (link.attr('./display') != "none")
+	        		savedLinks.push(link);
+	        }
+	        else{link.remove();}
+		});
+	}
+	// Filter out Actors
+	var elements = [];
+	for (var e1 = 0; e1 < all_elements.length; e1++){
+		if (!(all_elements[e1] instanceof joint.shapes.basic.Actor)){
+			elements.push(all_elements[e1]);
+		}
+	}
+	// loop through all elements
+	// step 1: get a list of all elements and put leaves to the elementsReady, other elements to elementsWaiting
+	for (var e = 0; e < elements.length; e++){
+		var elementID = e.toString();
+		while (elementID.length < 4){ elementID = "0" + elementID;}
+		elements[e].prop("elementid", elementID);
+
+		var actorid = '-';
+		if (elements[e].get("parent")){
+			actorid = (graph.getCell(elements[e].get("parent")).prop("elementid") || "-");
+		}
+		
+		// IMPORTANT - useful stuff
+		// console.log(elements[e].attr(".satvalue/value")); // how you get the satisfaction value of the element
+		// elements[e].attr(".name/text").replace(/\n/g, " ") // how you get the name of each element
+		// ways to tell the intention type of each element
+		// if (elements[e] instanceof joint.shapes.basic.Goal)
+		// 	  console.log("G\t");	  
+		// else if (elements[e] instanceof joint.shapes.basic.Task)
+		// 	console.log("T\t");
+		// else if (elements[e] instanceof joint.shapes.basic.Quality)
+		// 	console.log("Q\t"); // NOTE this is different in other tools, in other tools, we use S to represent soft goals
+		// else if (elements[e] instanceof joint.shapes.basic.Resource)
+		// 	console.log("R\t");
+		// else
+		// 	console.log("I\t");
+	}
+	// print out all the relationship links
+	for (var l = 0; l < savedLinks.length; l++){
+		var current = savedLinks[l];
+		var relationship = current.label(0).attrs.text.text.toUpperCase()
+		var source = "-";
+		var target = "-";
+		// distinguish the source and target
+		if (current.get("source").id)
+			source = graph.getCell(current.get("source").id).prop("elementid");
+		if (current.get("target").id)
+			target = graph.getCell(current.get("target").id).prop("elementid");
+		console.log('relationship: ' + relationship);
+		if (relationship.indexOf("|") > -1){
+			evolvRelationships = relationship.replace(/\s/g, '').split("|");
+			console.log('L\t' + evolvRelationships[0] + '\t' + source + '\t' + target + '\t' + evolvRelationships[1] + "\n");
+			console.log('***');
+		}else{
+			console.log('L\t' + relationship + '\t' + source + '\t' + target + "\n");
+			console.log('*');
+		}
+	}
+
+
+
 
 
 });
@@ -1064,7 +1029,7 @@ function calculateEvaluation() {
 
 	// decomposition (AND, OR)
 	// if (hasDecomposition || numContributions > 0) // Since result will be none we shouldn't need this condition, just the next statement.
-
+	
 
 	// contributions
 
@@ -1086,9 +1051,9 @@ function getDecomposition(decomSums, type){
 	// rules
 	var result = N;
 	var dns = decomSums[S];
-	var dnws = decomSums[WS];
+	var dnws = decomSums[PS];
 	var dnn = decomSums[N];
-	var dnwd = decomSums[WD];
+	var dnwd = decomSums[PD];
 	var dnd = decomSums[D];
 	var dnc = decomSums[C];
 	var dnu = decomSums[U];
@@ -1098,11 +1063,11 @@ function getDecomposition(decomSums, type){
 		} else if ((dnc > 0) || (dnu > 0)) {
 			result = U;
 		} else if (dnwd > 0) {
-			result = WD;
+			result = PD;
 		} else if (dnn > 0) {
 			result = N;
 		} else if (dnws > 0) {
-			result = WS;
+			result = PS;
 		} else if (dns > 0) {
 			result = S;
 		} else {
@@ -1112,13 +1077,13 @@ function getDecomposition(decomSums, type){
 		if (dns > 0) {
 			result = S;
 		} else if (dnws > 0) {		// CHANGED over AMYOT ET. Al. was after U conditions.
-			result = WS;				
+			result = PS;				
 		} else if ((dnc > 0) || (dnu > 0)) {
 			result = U;
 		} else if (dnn > 0) {
 			result = N;
 		} else if (dnwd > 0) {
-			result = WD;
+			result = PD;
 		} else if (dnd > 0) {
 			result = D;
 		}
