@@ -14,7 +14,6 @@ var currentAnalysis;
 
 // Analysis variables
 var historyObject = new historyObject();
-var sliderObject = new sliderObject();
 var queryObject = new queryObject();
 
 var loader;
@@ -87,24 +86,6 @@ $('.inspector').append(linkInspector.el);
 //Interface set up for modelling mode on startup
 $('#dropdown-model').css("display","none");
 $('#history').css("display","none");
-
-//Initialize Slider setup
-sliderObject.sliderElement = document.getElementById('slider');
-sliderObject.sliderValueElement = document.getElementById('sliderValue');
-
-$('#slider').width($('#paper').width() * 0.8);
-$('#slider').css("margin-top", $(window).height() * 0.9);
-
-// Adjust slider value position based on stencil width and paper width
-var sliderValuePosition = 200 + $('#paper').width() * 0.1;
-$('#sliderValue').css("top", '20px');
-$('#sliderValue').css("left", sliderValuePosition.toString() + 'px');
-$('#sliderValue').css("position", "relative");
-
-$(window).resize(function() {
-	$('#slider').css("margin-top", $(this).height() * 0.9);
-	$('#slider').width($('#paper').width() * 0.8);
-});
 
 //If a cookie exists, process it as a previously created graph and load it.
 if (document.cookie){
@@ -1066,176 +1047,15 @@ $('#clearlabel-btn').on('click', function(){
 	elementInspector.clearCell();
 });
 
-// ----------------------------------------------------------------- //
-// Slider control
-
-// Slider creation and update
-function updateSlider(currentAnalysis, pastAnalysisStep){
-	var analysisMarkers;
-
-	// First create slider
-	if(!sliderObject.sliderElement.noUiSlider){
-		var currentValueLimit = 0;
-		var sliderMax = currentAnalysis.timeScale;
-
-		updateHistory(currentAnalysis, currentValueLimit);
-		analysisMarkers = sliderObject.pastAnalysisValues;
-
-	// Clicking on element on history log
-	}else if(typeof(pastAnalysisStep) == "number"){
-		if (pastAnalysisStep == 0){
-			var currentValueLimit = 0;
-			var sliderMax = currentAnalysis.timeScale;
-			analysisMarkers = [];
-		}else{
-			var currentValueLimit = historyObject.allHistory[pastAnalysisStep - 1].sliderEnd;
-			var sliderMax = currentValueLimit + currentAnalysis.timeScale;
-			analysisMarkers = sliderObject.pastAnalysisValues.slice(0, pastAnalysisStep);
-		}
-
-		sliderObject.sliderElement.noUiSlider.destroy();
-
-	// Appending new analysis
-	}else{
-		var currentValueLimit = parseInt(sliderObject.sliderElement.noUiSlider.get());
-		var sliderMax = currentValueLimit + currentAnalysis.timeScale;
-
-		sliderObject.sliderElement.noUiSlider.destroy();
-
-		//append to past analysis values only if value change
-		var pastLength = sliderObject.pastAnalysisValues.length;
-		if ((sliderObject.pastAnalysisValues[pastLength - 1] != currentValueLimit) && (currentValueLimit != 0)){
-			sliderObject.pastAnalysisValues.push(currentValueLimit);
-			updateHistory(currentAnalysis, currentValueLimit);
-		}else{
-			updateHistoryName(currentAnalysis);
-		}
-
-		analysisMarkers = sliderObject.pastAnalysisValues;
-	}
-	adjustSlider(sliderMax);
-	if (sliderMax < 25){
-		noUiSlider.create(sliderObject.sliderElement, {
-		start: 0,
-		step: 1,
-		behaviour: 'tap',
-		connect: 'lower',
-		direction: 'ltr',
-		range: {
-			'min': 0,
-			'max': sliderMax
-		},
-		pips: {
-			mode: 'values',
-			values: analysisMarkers,
-			density: 100/sliderMax
-		}
-		});
-	}
-	else {
-		noUiSlider.create(sliderObject.sliderElement, {
-		start: 0,
-		step: 1,
-		behaviour: 'tap',
-		connect: 'lower',
-		direction: 'ltr',
-		range: {
-			'min': 0,
-			'max': sliderMax
-		},
-		pips: {
-			mode: 'values',
-			values: analysisMarkers,
-			density: 4
-		}
-		});
-	}
-	sliderObject.sliderElement.noUiSlider.on('update', function( values, handle ) {
-		//Set slidable range based on previous analysis
-		if(values[handle] < currentValueLimit){
-			sliderObject.sliderElement.noUiSlider.set(currentValueLimit);
-		}else{
-			updateSliderValues(values[handle], currentValueLimit);
-		}
-	});
-}
-// Adjust slider's width based on the maxvalue of the slider
-function adjustSlider(maxValue){
-	// Min width of slider is 15% of paper's width
-	var min = $('#paper').width() * 0.1;
-	// Max width of slider is 90% of paper's width
-	var max = $('#paper').width() * 0.8;
-	// This is the width based on maxvalue
-	var new_width = $('#paper').width() * maxValue / 100;
-	// new_width is too small or too large, adjust
-	if (new_width < min){
-		new_width = min;
-	}
-	if (new_width > max){
-		new_width = max;
-	}
-	$('#slider').width(new_width);
-}
-
-function updateSliderValues(valueString, currentValueLimit){
-	var sliderValue = parseInt(valueString);
-	var value = sliderValue - currentValueLimit;
-	$('#sliderValue').text(value);
-	sliderObject.sliderValueElement.innerHTML = value;
-
-	for (var i = 0; i < currentAnalysis.numOfElements; i++){
-		updateValues(i, parseInt(currentAnalysis.elements[i][value]), "renderAnalysis");
-	}
-}
-
-//Update the satisfaction value of a particular node in the graph
-function updateValues(c, v, m){
-	var cell;
-	var value;
-
-	//Update node based on values from cgi file
-	if (m == "renderAnalysis"){
-		var satvalues = ["denied", "partiallydenied", "partiallysatisfied", "satisfied", "conflict", "unknown", "none"];
-		cell = graphObject.allElements[c];
-		value = satvalues[v];
-		cell.attr(".satvalue/value", value);
-
-	//Update node based on values saved from graph prior to analysis
-	}else if (m == "toInitModel"){
-		cell = graphObject.allElements[c];
-		value = v.attributes.attrs.satvalue.value;
-	}
-
-	//Update images for properties
-	if (value == "satisfied"){
-		cell.attr({ '.satvalue': {'d': 'M 0 10 L 5 20 L 20 0 L 5 20 L 0 10', 'stroke': '#00FF00', 'stroke-width':4}});
-	}else if(value == "partiallysatisfied") {
-		cell.attr({ '.satvalue': {'d': 'M 0 8 L 5 18 L 20 0 L 5 18 L 0 8 M 17 30 L 17 15 C 17 15 30 17 18 23', 'stroke': '#00FF00', 'stroke-width':4, 'fill': 'transparent'}});
-	}else if (value == "denied"){
-		cell.attr({ '.satvalue': {'d': 'M 0 20 L 20 0 M 10 10 L 0 0 L 20 20', 'stroke': '#FF0000', 'stroke-width': 4}});
-	}else if (value == "partiallydenied") {
-		cell.attr({ '.satvalue': {'d': 'M 0 15 L 15 0 M 15 15 L 0 0 M 17 30 L 17 15 C 17 15 30 17 18 23', 'stroke': '#FF0000', 'stroke-width': 4, 'fill': 'transparent'}});
-	}else if (value == "conflict") {
-		cell.attr({ '.satvalue': {'d': 'M 0 0 L 20 8 M 20 7 L 5 15 M 5 14 L 25 23', 'stroke': '#222222', 'stroke-width': 4}});
-	}else if (value == "unknown") {
-		cell.attr({ '.satvalue': {'d': 'M15.255,0c5.424,0,10.764,2.498,10.764,8.473c0,5.51-6.314,7.629-7.67,9.62c-1.018,1.481-0.678,3.562-3.475,3.562\
-		    c-1.822,0-2.712-1.482-2.712-2.838c0-5.046,7.414-6.188,7.414-10.343c0-2.287-1.522-3.643-4.066-3.643\
-		    c-5.424,0-3.306,5.592-7.414,5.592c-1.483,0-2.756-0.89-2.756-2.584C5.339,3.683,10.084,0,15.255,0z M15.044,24.406\
-		    c1.904,0,3.475,1.566,3.475,3.476c0,1.91-1.568,3.476-3.475,3.476c-1.907,0-3.476-1.564-3.476-3.476\
-		    C11.568,25.973,13.137,24.406,15.044,24.406z', 'stroke': '#222222', 'stroke-width': 10}});
-	}else {
-		cell.removeAttr(".satvalue/d");
-	}
-}
-
 
 // ----------------------------------------------------------------- //
 // forward analysis
 $('#frd-analysis-btn').on('click', function(){
 	// propogation
 	// analysis
-	
 	// Question: how do you update the drawing and also the elementInspector value together
+	
+
 
 });
 
@@ -1304,5 +1124,3 @@ function getDecomposition(decomSums, type){
 		}
 	}
 }
-
-
