@@ -941,19 +941,6 @@ $('#frd-analysis-btn').on('click', function(){
 	// TODO: Check to make sure there are not nodes that have more than one type of Decomposition (AND/OR/XOR) connected to them.
 	// TODO: This doesn't work in the growingleaf tool
 	var all_elements = graph.getElements();
-	// update all links
-	var savedLinks = [];
-	if (linkMode == "Relationships"){
-		savedConstraints = graphObject.intensionConstraints;
-		var links = graph.getLinks();
-	    links.forEach(function(link){
-	        if(!isLinkInvalid(link)){
-				if (link.attr('./display') != "none")
-	        		savedLinks.push(link);
-	        }
-	        else{link.remove();}
-		});
-	}
 	// Filter out Actors
 	var elements = [];
 	for (var e1 = 0; e1 < all_elements.length; e1++){
@@ -961,7 +948,7 @@ $('#frd-analysis-btn').on('click', function(){
 			elements.push(all_elements[e1]);
 		}
 	}
-	console.log(elements[0].id);
+
 	// loop through all elements and build a dictionary of {id:LinkCalc}
 	// with LinkCalc represents the number of imcoming links to the element
 	// TODO
@@ -969,9 +956,10 @@ $('#frd-analysis-btn').on('click', function(){
 	// step 1: get a list of all elements and put leaves to the elementsReady, other elements to elementsWaiting
 	var elementsReady = [];
 	var elementsWaiting = [];
-	var elementsEvaluated = []; // the ID of the elements
 	for (var e = 0; e < elements.length; e++){
+		// initialize all nodes with 0
 		LinkCalc[elements[e].id] = 0;
+		// set up elementID
 		var elementID = e.toString();
 		while (elementID.length < 4){ elementID = "0" + elementID;}
 		elements[e].prop("elementid", elementID);
@@ -983,26 +971,59 @@ $('#frd-analysis-btn').on('click', function(){
 			elementsWaiting.push(elements[e]);
 		}
 	}
+
+	// update all links
+	var savedLinks = [];
+	if (linkMode == "Relationships"){
+		var links = graph.getLinks();
+	    links.forEach(function(link){
+	        if(!isLinkInvalid(link)){
+				if (link.attr('./display') != "none")
+					savedLinks.push(link);
+					// add 1 to the node for each incoming link
+					LinkCalc[link.get("target").id] ++;
+	        }
+	        else{link.remove();}
+		});
+	}
+
 	// evaluate model
 	// when the list is not empty
 	while (elementsReady.length > 0){
-		// Get Node and remove it from the top of the list, add it to the elementsEvaluated
+		// Get and remove the first element in the elementsReady to evaluate
 		var element = elementsReady.shift();
-		elementsEvaluated.push(element.id);
 		// Calculate New Evaluation by calling calculateEvaluation function
-		satisfactionValue = calculateEvaluation(element);
-		// Update Element's Connected Links
+		var satisfactionValue = calculateEvaluation(element);
+		
+		
+
+
+		// TODO: update the satisfactionValue of the element and udpate the graph
+
+
+
 		// loop through all links in the graph and find the one with the element
-		// find the eleDest of the element
+		// find the eleDest aka target of the element
 		for (var l = 0; l < savedLinks.length; l++){
 			var current = savedLinks[l]; // current is each link
 			if (current.get("source").id && current.get("source").id == element.id && current.get("target").id && inElementsWaiting(elementsWaiting, current.get("target"))){
-				// source = graph.getCell(current.get("source").id).prop("elementid"); // elementID of the source
-				// target = graph.getCell(current.get("target").id).prop("elementid"); // elementID of the target
-				// TODO: check whether the children of the source have all been examed
-				if (true){
-					// push it to the elementsReady
-					// remove it from the elementsWaiting
+				var targetID = savedLinks[l].get("target").id; 
+				// check whether the children of the source have all been examed
+				// if we examined a node, we decrement the LinkCalc of its parent by 1
+				LinkCalc[targetID] --;
+				// when the target becomes a new "leaf", add it to the elementsReady and remove it from elementsWaiting
+				if (LinkCalc[targetID] == 0){
+					// udpate elementsWaiting
+					var newLeaf = null;
+					for (var p = 0; p < elementsWaiting.length; p++){
+						if (elementsWaiting[p].id == targetID){
+							newLeaf = elementsWaiting[p];
+							var temp_i = elementsWaiting.indexOf(elementsWaiting[p]);
+							elementsWaiting.splice(temp_i, 1);
+						}
+					}
+					// udpate elementsReady
+					elementsReady.push(newLeaf);
 				}
 			}
 
@@ -1157,8 +1178,3 @@ function inElementsWaiting(elementsWaiting, target) {
 	
 }
 
-// check whether the element whose all children have been evaluated
-function isNewLeaf(elementsEvaluated, target){
-	return elementsEvaluated.includes(target.id);
-
-}
