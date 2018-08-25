@@ -218,13 +218,4 @@ var ElementInspector = Backbone.View.extend({
   clear: function(){
     this.$el.html('');
   },
-
-  //Make corresponding changes in the inspector to the actual element in the chart
-  clearCell: function(event) {
-    var allIntentions = graph.getElements();
-    for (i = 0; i < allIntentions.length; i++) {
-        allIntentions[i].removeAttr(".satvalue/d");
-        allIntentions[i].attr({ '.satvalue': {'text': 'none', 'value': 'none'}});
-    }
-  },
 });

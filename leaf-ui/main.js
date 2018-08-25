@@ -809,7 +809,6 @@ $('#btn-clear-elabel').on('click', function(){
 		elementInspector.render(cellView);
 		elementInspector.$('#init-sat-value').val("none");
 		elementInspector.updateHTML(null);
-
 	}
 
 });
@@ -934,13 +933,6 @@ function download(filename, text) {
 }
 
 // ----------------------------------------------------------------- //
-// When Clear Labels button is pressed
-$('#clearlabel-btn').on('click', function(){
-	elementInspector.clearCell();
-});
-
-
-// ----------------------------------------------------------------- //
 // forward analysis
 $('#frd-analysis-btn').on('click', function(){
 	// propogation
@@ -969,18 +961,81 @@ $('#frd-analysis-btn').on('click', function(){
 			elements.push(all_elements[e1]);
 		}
 	}
-	// loop through all elements
+	console.log(elements[0].id);
+	// loop through all elements and build a dictionary of {id:LinkCalc}
+	// with LinkCalc represents the number of imcoming links to the element
+	// TODO
+	var LinkCalc = {};
 	// step 1: get a list of all elements and put leaves to the elementsReady, other elements to elementsWaiting
+	var elementsReady = [];
+	var elementsWaiting = [];
+	var elementsEvaluated = []; // the ID of the elements
 	for (var e = 0; e < elements.length; e++){
+		LinkCalc[elements[e].id] = 0;
 		var elementID = e.toString();
 		while (elementID.length < 4){ elementID = "0" + elementID;}
 		elements[e].prop("elementid", elementID);
+		// check if it is leaf node or not, assign to elementsReady if yes; assign to elementsWaiting if no
+		if (isLeaf(elements[e])){
+			elementsReady.push(elements[e]);
+		}
+		else {
+			elementsWaiting.push(elements[e]);
+		}
+	}
+	// evaluate model
+	// when the list is not empty
+	while (elementsReady.length > 0){
+		// Get Node and remove it from the top of the list, add it to the elementsEvaluated
+		var element = elementsReady.shift();
+		elementsEvaluated.push(element.id);
+		// Calculate New Evaluation by calling calculateEvaluation function
+		satisfactionValue = calculateEvaluation(element);
+		// Update Element's Connected Links
+		// loop through all links in the graph and find the one with the element
+		// find the eleDest of the element
+		for (var l = 0; l < savedLinks.length; l++){
+			var current = savedLinks[l]; // current is each link
+			if (current.get("source").id && current.get("source").id == element.id && current.get("target").id && inElementsWaiting(elementsWaiting, current.get("target"))){
+				// source = graph.getCell(current.get("source").id).prop("elementid"); // elementID of the source
+				// target = graph.getCell(current.get("target").id).prop("elementid"); // elementID of the target
+				// TODO: check whether the children of the source have all been examed
+				if (true){
+					// push it to the elementsReady
+					// remove it from the elementsWaiting
+				}
+			}
 
-		var actorid = '-';
-		if (elements[e].get("parent")){
-			actorid = (graph.getCell(elements[e].get("parent")).prop("elementid") || "-");
+
+			
 		}
 		
+			// only remove the eleDest from the elementsWaiting array iff we have evaluated all elements whose parents is eleDest
+
+		
+
+
+
+
+
+
+	}
+		
+		
+
+
+
+
+
+
+
+	
+
+
+
+
+
+
 		// IMPORTANT - useful stuff
 		// console.log(elements[e].attr(".satvalue/value")); // how you get the satisfaction value of the element
 		// elements[e].attr(".name/text").replace(/\n/g, " ") // how you get the name of each element
@@ -995,28 +1050,29 @@ $('#frd-analysis-btn').on('click', function(){
 		// 	console.log("R\t");
 		// else
 		// 	console.log("I\t");
-	}
+	// }
 	// print out all the relationship links
-	for (var l = 0; l < savedLinks.length; l++){
-		var current = savedLinks[l];
-		var relationship = current.label(0).attrs.text.text.toUpperCase()
-		var source = "-";
-		var target = "-";
-		// distinguish the source and target
-		if (current.get("source").id)
-			source = graph.getCell(current.get("source").id).prop("elementid");
-		if (current.get("target").id)
-			target = graph.getCell(current.get("target").id).prop("elementid");
-		console.log('relationship: ' + relationship);
-		if (relationship.indexOf("|") > -1){
-			evolvRelationships = relationship.replace(/\s/g, '').split("|");
-			console.log('L\t' + evolvRelationships[0] + '\t' + source + '\t' + target + '\t' + evolvRelationships[1] + "\n");
-			console.log('***');
-		}else{
-			console.log('L\t' + relationship + '\t' + source + '\t' + target + "\n");
-			console.log('*');
-		}
-	}
+	// for (var l = 0; l < savedLinks.length; l++){
+	// 	var current = savedLinks[l];
+	// 	var relationship = current.label(0).attrs.text.text.toUpperCase()
+	// 	var source = "-";
+	// 	var target = "-";
+	// 	// distinguish the source and target
+	// 	if (current.get("source").id)
+	// 		source = graph.getCell(current.get("source").id).prop("elementid");
+	// 	if (current.get("target").id)
+	// 		target = graph.getCell(current.get("target").id).prop("elementid");
+	// 	// console.log('relationship: ' + relationship);
+	// 	if (relationship.indexOf("|") > -1){
+	// 		evolvRelationships = relationship.replace(/\s/g, '').split("|");
+	// 		console.log('L\t' + evolvRelationships[0] + '\t' + source + '\t' + target + '\t' + evolvRelationships[1] + "\n");
+	// 	}else{
+	// 		console.log('L\t' + relationship + '\t' + source + '\t' + target + "\n");
+	// 	}
+	// }
+
+	// Initialise values
+
 
 
 
@@ -1025,7 +1081,7 @@ $('#frd-analysis-btn').on('click', function(){
 });
 
 // calculate evaluation
-function calculateEvaluation() {
+function calculateEvaluation(element) {
 
 	// decomposition (AND, OR)
 	// if (hasDecomposition || numContributions > 0) // Since result will be none we shouldn't need this condition, just the next statement.
@@ -1037,7 +1093,7 @@ function calculateEvaluation() {
 
 	// precondition
 
-
+	return true
 }
 
 function getDecomposition(decomSums, type){
@@ -1088,4 +1144,21 @@ function getDecomposition(decomSums, type){
 			result = D;
 		}
 	}
+}
+
+// check whether the element is in the elementsWaiting
+function inElementsWaiting(elementsWaiting, target) {
+	for (var l = 0; l < elementsWaiting.length; l++){
+		if (elementsWaiting[l].id == target.id ){
+			return true
+		}
+	}
+	return false
+	
+}
+
+// check whether the element whose all children have been evaluated
+function isNewLeaf(elementsEvaluated, target){
+	return elementsEvaluated.includes(target.id);
+
 }
