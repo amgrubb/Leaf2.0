@@ -1010,7 +1010,6 @@ $('#frd-analysis-btn').on('click', function(){
 		// Calculate New Evaluation by calling calculateEvaluation function
 		var satisfactionValue = calculateEvaluation(elements, savedLinks, element);
 		// update the satisfactionValue of the element and udpate the graph
-		console.log(satisfactionValue);
 		if (satisfactionValue > 0){
 			updateValues(element, satValueDictInverse[satisfactionValue]);
 		}
@@ -1074,7 +1073,7 @@ function calculateEvaluation(elements, savedLinks, element) {
 		preSums[i] = 0;
 	}
 	
-	//Go through all links that the current node is the target of
+	//Go through all links that the current node is the *target* of
 	var linksWanted = [];
 	for (var l = 0; l < savedLinks.length; l++){
 		var current = savedLinks[l]; // current is each link
@@ -1108,12 +1107,13 @@ function calculateEvaluation(elements, savedLinks, element) {
 			dependSums[sVal] ++;
 		} else {
 			// TODO: need to figure out what kind of condition is considered as Precondition, fix the condition accordingly
+			// NeedBy?
 			hasPreconditions = true;
 			preSums[sVal]++;
 		}
 	}
 
-	var result = -1;
+	var result = satValueDict[element.attr(".satvalue/value")]; // use the initia value of the element to be the initial value
 	if (hasDecomposition){
 		result = getDecomposition(decomSums, eachLink.label(0).attrs.text.text);
 	}
@@ -1145,7 +1145,7 @@ function getDecomposition(decomSums, type){
 	 * `type`: indicates types of decomposition. Either AND or OR
 	 */
 	// rules
-	var result = -1;
+	var result = N;
 	var dns = decomSums[S];
 	var dnws = decomSums[PS];
 	var dnn = decomSums[N];
@@ -1190,9 +1190,9 @@ function getDecomposition(decomSums, type){
 function getPrecondition(decomSums, linkResult){
 	var minPrecondition = N;
 	var dns = decomSums[S];
-	var dnws = decomSums[WS];
+	var dnws = decomSums[PS];
 	var dnn = decomSums[N];
-	var dnwd = decomSums[WD];
+	var dnwd = decomSums[PD];
 	var dnd = decomSums[D];
 	var dnc = decomSums[C];
 	var dnu = decomSums[U];
@@ -1202,17 +1202,16 @@ function getPrecondition(decomSums, linkResult){
 	} else if ((dnc > 0) || (dnu > 0)) {
 		minPrecondition = U;
 	} else if (dnwd > 0) {
-		minPrecondition = WD;
+		minPrecondition = PD;
 	} else if (dnn > 0) {
 		minPrecondition = N;
 	} else if (dnws > 0) {
-		minPrecondition = WS;
+		minPrecondition = PS;
 	} else if (dns > 0) {
 		minPrecondition = S;
 	} else {
 		minPrecondition = N;
 	}
-
 	return combinePreconditionFunction[linkResult][minPrecondition];
 	
 }
@@ -1227,26 +1226,26 @@ function getQualitativeContribution(sums, numRead) {
 		}		
 	else {
 		var ns = sums[S];
-		var nws = sums[WS];
+		var nws = sums[PS];
 		//int nn = sums[N];	//Unused Variable
-		var nwd = sums[WD];
+		var nwd = sums[PD];
 		var nd = sums[D];
 		var nc = sums[C];
 		var nu = sums[U];
 
 		if (nc > 0 || nu > 0)
 			return U;
-		return combineContributionsFunction[compareWS_WD(nws, nwd)][compareS_D(ns, nd)];
+		return combineContributionsFunction[comparePS_PD(nws, nwd)][compareS_D(ns, nd)];
 	}
 	return -1;	//This line should never be reached.
 }
 
-function compareWS_WD(nws, nwd) {
+function comparePS_PD(nws, nwd) {
 	// w1 = ws, if nws > nwd = wd, if nwd > nws = n, otherwise
 	if (nws > nwd)
-		return WS;
+		return PS;
 	if (nwd > nws)
-		return WD;
+		return PD;
 	if ((nws > 0) && (nwd == nws))		//November 2016: Added to prevent none variables.
 		return U;
 	return N;
