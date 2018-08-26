@@ -43,6 +43,7 @@ const S = satValueDict['satisfied'];
 const C = satValueDict['conflict'];
 const U = satValueDict['unknown'];
 const N = satValueDict['none'];
+
 const weightedContributionFunction = [
 	// makes, helps, hurts, breaks
 	[ D, PD, PS, PS ], // D		// Last column PS for i* and S for GRL.
@@ -1080,6 +1081,7 @@ $('#frd-analysis-btn').on('click', function(){
 // elements is a list of all elements in the graph
 // element is the one that we are currently exploring
 function calculateEvaluation(elements, savedLinks, element) {
+	
 	// setup variables for bookkeeping
 	var hasDecomposition = false;
 	var decomSums = [];
@@ -1111,6 +1113,9 @@ function calculateEvaluation(elements, savedLinks, element) {
 		var current = savedLinks[l]; // current is each link
 		if (current.get("source").id && current.get("source").id == element.id && current.get("target").id){
 			linksWanted.push(current);
+		} else if (current.label(0).attrs.text.text == "depends" && current.get("target").id == element.id){
+			// with exception of dependency where source is the dependerElmt, target is the dependum/dependeeElmt
+			linksWanted.push(current);
 		}
 	}
 	// get the current evaluation value of the source and target along with the link label
@@ -1126,41 +1131,37 @@ function calculateEvaluation(elements, savedLinks, element) {
 			decomSums[sVal]++;
 		} else if (eachLink.label(0).attrs.text.text == "helps" || eachLink.label(0).attrs.text.text == "hurts" || eachLink.label(0).attrs.text.text == "makes" || eachLink.label(0).attrs.text.text == "breaks") {
 			// contributions
-			var contValue = eachLink.label(0).attrs.text.text;
-			console.log(contValue);
+			var contValue = weightedContDict[eachLink.label(0).attrs.text.text];
 			var ci = weightedContributionFunction[sVal][contValue];
-			console.log(ci);
-			return
+			sums[ci] ++;
+			numContributions ++;
+		} else if (eachLink.label(0).attrs.text.text == "depends"){// TODO
+			// dependency
+			hasDependencies = true;
+			dependSums[sVal] ++;
+		} else {
+			// TODO: precondition, need to fix the condition
+			hasPreconditions = true;
+			preSums[sVal]++;
+		}
+		
+		var result = -1;
+		if (hasDecomposition){
+			result = getDecomposition(decomSums, eachLink.label(0).attrs.text.text);
 		}
 			
-			// if (hasDecomposition || numContributions > 0) // Since result will be none we shouldn't need this condition, just the next statement.
-			
-			// dependency
-			// precondition
-	
-	
-	
+		if (numContributions > 0) {
+			if (hasDecomposition)
+				sums[result]++;
+			result = getQualitativeContribution(sums, numContributions);
+		}
+		
+		if (hasPreconditions){
+			result = getPrecondition(preSums, result);
+		}
+		
+		return result;	
 	}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 }
 
 function getDecomposition(decomSums, type){
@@ -1172,7 +1173,7 @@ function getDecomposition(decomSums, type){
 	 * `type`: indicates types of decomposition. Either AND or OR
 	 */
 	// rules
-	var result = N;
+	var result = -1;
 	var dns = decomSums[S];
 	var dnws = decomSums[PS];
 	var dnn = decomSums[N];
@@ -1180,7 +1181,7 @@ function getDecomposition(decomSums, type){
 	var dnd = decomSums[D];
 	var dnc = decomSums[C];
 	var dnu = decomSums[U];
-	if (type == DecompositionType.AND) {
+	if (type == "and") {
 		if (dnd > 0) {
 			result = D;
 		} else if ((dnc > 0) || (dnu > 0)) {
@@ -1196,7 +1197,7 @@ function getDecomposition(decomSums, type){
 		} else {
 			result = N;
 		}
-	} else if (type == DecompositionType.OR || type == DecompositionType.XOR) {
+	} else if (type == "or") {
 		if (dns > 0) {
 			result = S;
 		} else if (dnws > 0) {		// CHANGED over AMYOT ET. Al. was after U conditions.
@@ -1211,6 +1212,85 @@ function getDecomposition(decomSums, type){
 			result = D;
 		}
 	}
+	return result;
+}
+
+function getPrecondition(decomSums, linkResult){
+	var minPrecondition = N;
+	var dns = decomSums[S];
+	var dnws = decomSums[WS];
+	var dnn = decomSums[N];
+	var dnwd = decomSums[WD];
+	var dnd = decomSums[D];
+	var dnc = decomSums[C];
+	var dnu = decomSums[U];
+
+	if (dnd > 0) {
+		minPrecondition = D;
+	} else if ((dnc > 0) || (dnu > 0)) {
+		minPrecondition = U;
+	} else if (dnwd > 0) {
+		minPrecondition = WD;
+	} else if (dnn > 0) {
+		minPrecondition = N;
+	} else if (dnws > 0) {
+		minPrecondition = WS;
+	} else if (dns > 0) {
+		minPrecondition = S;
+	} else {
+		minPrecondition = N;
+	}
+
+	return combinePreconditionFunction[linkResult][minPrecondition];
+	
+}
+
+
+
+
+function getQualitativeContribution(sums, numRead) {
+	if (numRead == 1) 
+		for (var i = 0; i < sums.length; i++) {
+			if (sums[i] > 0){
+				return i;
+			}
+		}		
+	else {
+		var ns = sums[S];
+		var nws = sums[WS];
+		//int nn = sums[N];	//Unused Variable
+		var nwd = sums[WD];
+		var nd = sums[D];
+		var nc = sums[C];
+		var nu = sums[U];
+
+		if (nc > 0 || nu > 0)
+			return U;
+		return combineContributionsFunction[compareWS_WD(nws, nwd)][compareS_D(ns, nd)];
+	}
+	return -1;	//This line should never be reached.
+}
+
+function compareWS_WD(nws, nwd) {
+	// w1 = ws, if nws > nwd = wd, if nwd > nws = n, otherwise
+	if (nws > nwd)
+		return WS;
+	if (nwd > nws)
+		return WD;
+	if ((nws > 0) && (nwd == nws))		//November 2016: Added to prevent none variables.
+		return U;
+	return N;
+}
+
+function compareS_D(ns, nd) {
+	//w2 = c, if ns >0 && nd >0 = s, if ns >0 && nd=0 = d, if nd >0 && ns=0 = n, if ns =0 && nd=0
+	if (ns > 0 && nd > 0)
+		return C;
+	if (ns > 0 && nd == 0)
+		return S;
+	if (nd > 0 && ns == 0)
+		return D;
+	return N;
 }
 
 // check whether the element is in the elementsWaiting
