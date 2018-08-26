@@ -30,6 +30,12 @@ var satValueDict = {
 	"conflict": 4,
 	"none": 6
 };
+var weightedContDict = {
+	"makes": 0,
+	"helps": 1,
+	"hurts": 2,
+	"breaks": 3
+};
 const D = satValueDict['denied'];
 const PD = satValueDict['partiallydenied'];
 const PS = satValueDict['partiallysatisfied'];
@@ -38,14 +44,14 @@ const C = satValueDict['conflict'];
 const U = satValueDict['unknown'];
 const N = satValueDict['none'];
 const weightedContributionFunction = [
-	// M, H+, s+,  u, s-, H-,  B
-	[ D, PD, PD,  N, PS, PS, PS ], // D		// Last column PS for i* and S for GRL.
-	[ PD, PD, PD,  N, PS, PS, PS ], // PD
-	[ PS, PS, PS,  N, PD, PD, PD ], // PS
-	[  S, PS, PS,  N, PD, PD,  D ], // S
-	[  U,  U,  U,  U,  U,  U,  U ], // C
-	[  U,  U,  U,  U,  U,  U,  U ], // U
-	[  N,  N,  N,  N,  N,  N,  N ], // N
+	// makes, helps, hurts, breaks
+	[ D, PD, PS, PS ], // D		// Last column PS for i* and S for GRL.
+	[ PD, PD, PS, PS ], // PD
+	[ PS, PS, PD, PD ], // PS
+	[  S, PS, PD,  D ], // S
+	[  U,  U,  U,  U ], // C
+	[  U,  U,  U,  U ], // U
+	[  N,  N,  N,  N ], // N
 ];
 const combineContributionsFunction = [ 
 	// D, PD, PS,  S,  C,  U,  N  
@@ -951,7 +957,6 @@ $('#frd-analysis-btn').on('click', function(){
 
 	// loop through all elements and build a dictionary of {id:LinkCalc}
 	// with LinkCalc represents the number of imcoming links to the element
-	// TODO
 	var LinkCalc = {};
 	// step 1: get a list of all elements and put leaves to the elementsReady, other elements to elementsWaiting
 	var elementsReady = [];
@@ -993,7 +998,7 @@ $('#frd-analysis-btn').on('click', function(){
 		// Get and remove the first element in the elementsReady to evaluate
 		var element = elementsReady.shift();
 		// Calculate New Evaluation by calling calculateEvaluation function
-		var satisfactionValue = calculateEvaluation(element);
+		var satisfactionValue = calculateEvaluation(elements, savedLinks, element);
 		
 		
 
@@ -1002,6 +1007,7 @@ $('#frd-analysis-btn').on('click', function(){
 
 
 
+		// bookkeeping:
 		// loop through all links in the graph and find the one with the element
 		// find the eleDest aka target of the element
 		for (var l = 0; l < savedLinks.length; l++){
@@ -1026,36 +1032,10 @@ $('#frd-analysis-btn').on('click', function(){
 					elementsReady.push(newLeaf);
 				}
 			}
-
-
-			
 		}
 		
 			// only remove the eleDest from the elementsWaiting array iff we have evaluated all elements whose parents is eleDest
-
-		
-
-
-
-
-
-
 	}
-		
-		
-
-
-
-
-
-
-
-	
-
-
-
-
-
 
 		// IMPORTANT - useful stuff
 		// console.log(elements[e].attr(".satvalue/value")); // how you get the satisfaction value of the element
@@ -1093,28 +1073,94 @@ $('#frd-analysis-btn').on('click', function(){
 	// }
 
 	// Initialise values
-
-
-
-
-
-
 });
 
 // calculate evaluation
-function calculateEvaluation(element) {
+// return an int representing the new evaluation
+// elements is a list of all elements in the graph
+// element is the one that we are currently exploring
+function calculateEvaluation(elements, savedLinks, element) {
+	// setup variables for bookkeeping
+	var hasDecomposition = false;
+	var decomSums = [];
+	for (var i = 0; i < 7; i++) {
+		decomSums[i] = 0;
+	}
 
-	// decomposition (AND, OR)
-	// if (hasDecomposition || numContributions > 0) // Since result will be none we shouldn't need this condition, just the next statement.
+	var numContributions = 0;
+	var sums = [];
+	for (var i = 0; i < 7; i++) {
+		sums[i] = 0;
+	}
 	
+	var hasDependencies = false;
+	var dependSums = [];
+	for (var i = 0; i < 7; i++) {
+		dependSums[i] = 0;
+	}
+	
+	var hasPreconditions = false;
+	var preSums = [];
+	for (var i = 0; i < 7; i++) {
+		preSums[i] = 0;
+	}
+	
+	//Go through all links that the current node is the source of
+	var linksWanted = [];
+	for (var l = 0; l < savedLinks.length; l++){
+		var current = savedLinks[l]; // current is each link
+		if (current.get("source").id && current.get("source").id == element.id && current.get("target").id){
+			linksWanted.push(current);
+		}
+	}
+	// get the current evaluation value of the source and target along with the link label
+	for (var l = 0; l < linksWanted.length; l++){
+		var eachLink = linksWanted[l];
+		var targetNode = getTarget(elements, eachLink.get("target").id);
+		var tVal = satValueDict[targetNode.attr(".satvalue/value")]; // satisfaction value of the target node
+		var sVal = satValueDict[element.attr(".satvalue/value")]; // satisfaction value of the source node
+		// four cases that we are consiedering here
+		// decomposition (and, or)
+		if (eachLink.label(0).attrs.text.text == "and" || eachLink.label(0).attrs.text.text == "or"){
+			hasDecomposition = true;
+			decomSums[sVal]++;
+		} else if (eachLink.label(0).attrs.text.text == "helps" || eachLink.label(0).attrs.text.text == "hurts" || eachLink.label(0).attrs.text.text == "makes" || eachLink.label(0).attrs.text.text == "breaks") {
+			// contributions
+			var contValue = eachLink.label(0).attrs.text.text;
+			console.log(contValue);
+			var ci = weightedContributionFunction[sVal][contValue];
+			console.log(ci);
+			return
+		}
+			
+			// if (hasDecomposition || numContributions > 0) // Since result will be none we shouldn't need this condition, just the next statement.
+			
+			// dependency
+			// precondition
+	
+	
+	
+	}
 
-	// contributions
 
-	// dependency
 
-	// precondition
 
-	return true
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }
 
 function getDecomposition(decomSums, type){
@@ -1178,3 +1224,10 @@ function inElementsWaiting(elementsWaiting, target) {
 	
 }
 
+function getTarget(elements, targetID){
+	for (var l = 0; l < elements.length; l++){
+		if (elements[l].id == targetID){
+			return elements[l];
+		}
+	}
+}
