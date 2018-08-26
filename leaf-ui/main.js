@@ -1009,34 +1009,11 @@ $('#frd-analysis-btn').on('click', function(){
 		var element = elementsReady.shift();
 		// Calculate New Evaluation by calling calculateEvaluation function
 		var satisfactionValue = calculateEvaluation(elements, savedLinks, element);
-		
-		
-		
-		
-		
-		// TODO: update the satisfactionValue of the element and udpate the graph
-		
+		// update the satisfactionValue of the element and udpate the graph
 		console.log(satisfactionValue);
 		if (satisfactionValue > 0){
 			updateValues(element, satValueDictInverse[satisfactionValue]);
 		}
-		
-
-		// var elements = graph.getElements();
-		// for (var i = 0; i < elements.length; i++){
-		// 	elements[i].removeAttr(".satvalue/d");
-		// 	elements[i].attr(".constraints/lastval", "none");
-		// 	elements[i].attr(".funcvalue/text", " ");
-		// 	var cellView  = elements[i].findView(paper);
-		// 	elementInspector.render(cellView);
-		// 	elementInspector.$('#init-sat-value').val("none");
-		// 	elementInspector.updateHTML(null);
-		// }
-
-
-
-
-
 		// bookkeeping:
 		// loop through all links in the graph and find the one with the element
 		// find the eleDest aka target of the element
@@ -1135,7 +1112,7 @@ function calculateEvaluation(elements, savedLinks, element) {
 			preSums[sVal]++;
 		}
 	}
-		
+
 	var result = -1;
 	if (hasDecomposition){
 		result = getDecomposition(decomSums, eachLink.label(0).attrs.text.text);
@@ -1239,8 +1216,6 @@ function getPrecondition(decomSums, linkResult){
 	return combinePreconditionFunction[linkResult][minPrecondition];
 	
 }
-
-
 
 
 function getQualitativeContribution(sums, numRead) {
