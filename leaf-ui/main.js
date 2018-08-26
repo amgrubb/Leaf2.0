@@ -464,7 +464,7 @@ paper.on('cell:pointerup', function(cellView, evt) {
 	// Link
 	if (cellView.model instanceof joint.dia.Link){
 		var link = cellView.model;
-		var sourceCell = link.getSourceElement().attributes.type;
+		// var sourceCell = link.getSourceElement().attributes.type;
 		setLinkType(link);
 		var linktype = link.attr(".link-type");
 		drawDefaultLink(link, linktype);
