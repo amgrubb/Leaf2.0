@@ -1010,7 +1010,7 @@ $('#frd-analysis-btn').on('click', function(){
 		// Calculate New Evaluation by calling calculateEvaluation function
 		var satisfactionValue = calculateEvaluation(elements, savedLinks, element);
 		// update the satisfactionValue of the element and udpate the graph
-		if (satisfactionValue > 0){
+		if (satisfactionValue >= 0){
 			updateValues(element, satValueDictInverse[satisfactionValue]);
 		}
 		// bookkeeping:
