@@ -14,17 +14,75 @@ var currentAnalysis;
 
 // Analysis variables
 var historyObject = new historyObject();
-var sliderObject = new sliderObject();
 var queryObject = new queryObject();
 
 var loader;
 var reader;
 
 //Properties for both core and simulator.
-var satvalues = {satisfied: 2, partiallysatisfied: 1, partiallydenied: -1, denied: -2, unknown: 0, conflict: 3, none: 4};
+// var satvalues = {satisfied: 2, partiallysatisfied: 1, partiallydenied: -1, denied: -2, unknown: 0, conflict: 3, none: 4};
+var satValueDict = {
+	"unknown": 5,
+	"satisfied": 3,
+	"partiallysatisfied": 2,
+	"partiallydenied": 1,
+	"denied": 0,
+	"conflict": 4,
+	"none": 6
+};
+var satValueDictInverse = {
+	5: "unknown",
+	3: "satisfied",
+	2: "partiallysatisfied",
+	1: "partiallydenied",
+	0: "denied",
+	4: "conflict",
+	6: "none"
+};
+var weightedContDict = {
+	"makes": 0,
+	"helps": 1,
+	"hurts": 2,
+	"breaks": 3
+};
+const D = satValueDict['denied'];
+const PD = satValueDict['partiallydenied'];
+const PS = satValueDict['partiallysatisfied'];
+const S = satValueDict['satisfied'];
+const C = satValueDict['conflict'];
+const U = satValueDict['unknown'];
+const N = satValueDict['none'];
 
-//var functions = {A: 'AI', O: 'OI', N: 'NT', M: 'MP', R: 'R', S: 'SP', MN: 'MN', SN: 'SN', U: 'UD'};
-
+const weightedContributionFunction = [
+	// makes, helps, hurts, breaks
+	[ D, PD, PS, PS ], // D		// Last column PS for i* and S for GRL.
+	[ PD, PD, PS, PS ], // PD
+	[ PS, PS, PD, PD ], // PS
+	[  S, PS, PD,  D ], // S
+	[  U,  U,  U,  U ], // C
+	[  U,  U,  U,  U ], // U
+	[  N,  N,  N,  N ], // N
+];
+const combineContributionsFunction = [ 
+	// D, PD, PS,  S,  C,  U,  N  
+	[  D,  D, PD,  C,  C,  U,  D ], // D
+	[  D, PD,  U, PS,  C,  U, PD ], // PD		PD + PS -> U was originally N. Changed for controlled experiment.
+	[ PD,  U, PS,  S,  C,  U, PS ], // PS
+	[  C, PS,  S,  S,  C,  U,  S ], // S
+	[  C,  C,  C,  C,  C,  C,  C ], // C
+	[  U,  U,  U,  U,  C,  U,  U ], // U
+	[  D, PD, PS,  S,  C,  U,  N ], // N
+];
+const combinePreconditionFunction = [ //row = previous-value col = min-precondition
+	// D, PD, PS,  S,  C,  U,  N  
+	[  D,  D,  D,  D,  C,  U,  D ], // D	
+	[  D,  D,  D, PD,  C,  U, PD ], // PD
+	[  D,  D,  D, PS,  C,  U, PS ], // PS
+	[  D,  D,  S,  S,  C,  U,  S ], // S
+	[  C,  C,  C,  C,  C,  C,  C ], // C
+	[  D,  D,  D,  U,  C,  U,  U ], // U
+	[  D,  D,  D,  S,  C,  U,  N ], // N
+];
 
 // ----------------------------------------------------------------- //
 // Page setup
@@ -88,24 +146,6 @@ $('.inspector').append(linkInspector.el);
 $('#dropdown-model').css("display","none");
 $('#history').css("display","none");
 
-//Initialize Slider setup
-sliderObject.sliderElement = document.getElementById('slider');
-sliderObject.sliderValueElement = document.getElementById('sliderValue');
-
-$('#slider').width($('#paper').width() * 0.8);
-$('#slider').css("margin-top", $(window).height() * 0.9);
-
-// Adjust slider value position based on stencil width and paper width
-var sliderValuePosition = 200 + $('#paper').width() * 0.1;
-$('#sliderValue').css("top", '20px');
-$('#sliderValue').css("left", sliderValuePosition.toString() + 'px');
-$('#sliderValue').css("position", "relative");
-
-$(window).resize(function() {
-	$('#slider').css("margin-top", $(this).height() * 0.9);
-	$('#slider').width($('#paper').width() * 0.8);
-});
-
 //If a cookie exists, process it as a previously created graph and load it.
 if (document.cookie){
 	var cookies = document.cookie.split(";");
@@ -124,8 +164,6 @@ if (document.cookie){
 
 
 }
-
-
 
 // ----------------------------------------------------------------- //
 // Rappid setup
@@ -426,7 +464,7 @@ paper.on('cell:pointerup', function(cellView, evt) {
 	// Link
 	if (cellView.model instanceof joint.dia.Link){
 		var link = cellView.model;
-		var sourceCell = link.getSourceElement().attributes.type;
+		// var sourceCell = link.getSourceElement().attributes.type;
 		setLinkType(link);
 		var linktype = link.attr(".link-type");
 		drawDefaultLink(link, linktype);
@@ -813,7 +851,6 @@ $('#btn-clear-elabel').on('click', function(){
 		elementInspector.render(cellView);
 		elementInspector.$('#init-sat-value').val("none");
 		elementInspector.updateHTML(null);
-
 	}
 
 });
@@ -941,151 +978,360 @@ function download(filename, text) {
 	document.body.removeChild(dl);
 }
 
-
-// Generates file needed for backend analysis
-function generateLeafFile(){
-
-	//Step 0: Get elements from graph.
+// ----------------------------------------------------------------- //
+// forward analysis
+$('#frd-analysis-btn').on('click', function(){
+	// propogation
+	// analysis
+	// Question: how do you update the drawing and also the elementInspector value together
+	// TODO: Check to make sure there are not nodes that have more than one type of Decomposition (AND/OR/XOR) connected to them.
+	// TODO: This doesn't work in the growingleaf tool
 	var all_elements = graph.getElements();
-	var savedLinks = [];
-	var savedConstraints = [];
-
-	if (linkMode == "Relationships"){
-		savedConstraints = graphObject.intensionConstraints;
-		var links = graph.getLinks();
-	    links.forEach(function(link){
-	        if(!isLinkInvalid(link)){
-				if (link.attr('./display') != "none")
-	        		savedLinks.push(link);
-	        }
-	        else{link.remove();}
-	    });
-	}else if (linkMode == "Constraints"){
-		savedLinks = graphObject.links;
-		var betweenIntensionConstraints = graph.getLinks();
-	    betweenIntensionConstraints.forEach(function(link){
-			var linkStatus = link.attributes.labels[0].attrs.text.text.replace(/\s/g, '');
-	        if(!isLinkInvalid(link) && (linkStatus != "constraint") && (linkStatus != "error")){
-				if (link.attr('./display') != "none")
-					savedConstraints.push(link);
-	        }
-	        else{link.remove();}
-	    });
-	}
-
-	//Step 1: Filter out Actors
+	// Filter out Actors
 	var elements = [];
-	var actors = [];
 	for (var e1 = 0; e1 < all_elements.length; e1++){
 		if (!(all_elements[e1] instanceof joint.shapes.basic.Actor)){
 			elements.push(all_elements[e1]);
 		}
-		else{
-			actors.push(all_elements[e1]);
-		}
 	}
 
-	//save elements in global variable for slider, used for toBackEnd funciton only
-	graphObject.allElements = elements;
-	graphObject.elementsBeforeAnalysis = elements;
-
-	var datastring = actors.length + "\n";
-	//print each actor in the model
-	for (var a = 0; a < actors.length; a++){
-		var actorId = a.toString();
-		while (actorId.length < 3){ actorId = "0" + actorId;}
-		actorId = "a" + actorId;
-		actors[a].prop("elementid", actorId);
-		datastring += ("A\t" + actorId + "\t" + actors[a].attr(".name/text") + "\t" + (actors[a].prop("actortype") || "A") + "\n");
-	}
-
-
-	// Step 2: Print each element in the model
-
-	// conversion between values used in Element Inspector with values used in backend
-	var satValueDict = {
-		"unknown": 5,
-		"satisfied": 3,
-		"partiallysatisfied": 2,
-		"partiallydenied": 1,
-		"denied": 0,
-		"conflict": 4,
-		"none": 6
-	}
-	datastring += elements.length + "\n";
+	// loop through all elements and build a dictionary of {id:LinkCalc}
+	// with LinkCalc represents the number of imcoming links to the element
+	var LinkCalc = {};
+	// step 1: get a list of all elements and put leaves to the elementsReady, other elements to elementsWaiting
+	var elementsReady = [];
+	var elementsWaiting = [];
 	for (var e = 0; e < elements.length; e++){
-		//var id = e.toString();
-		//while (id.length < 4){ id = "0" + id;}
-		//elements[e].prop("elementid", id);
+		// initialize all nodes with 0
+		LinkCalc[elements[e].id] = 0;
+		// set up elementID
 		var elementID = e.toString();
 		while (elementID.length < 4){ elementID = "0" + elementID;}
 		elements[e].prop("elementid", elementID);
-
-		var actorid = '-';
-		if (elements[e].get("parent")){
-			actorid = (graph.getCell(elements[e].get("parent")).prop("elementid") || "-");
+		// check if it is leaf node or not, assign to elementsReady if yes; assign to elementsWaiting if no
+		if (isLeaf(elements[e])){
+			elementsReady.push(elements[e]);
 		}
-		console.log(actorid);
-
-	// Print NT in "core" of tool where time does not exist.
-	//datastring += ("I\t" + actorid + "\t" + elementID + "\t" + (functions[elements[e].attr(".funcvalue/text")] || "NT") + "\t");
-
-	  datastring += ("I\t" + actorid + "\t" + elementID + "\t");
-		if (elements[e] instanceof joint.shapes.basic.Goal)
-		  	datastring += "G\t";
-		else if (elements[e] instanceof joint.shapes.basic.Task)
-		  	datastring += "T\t";
-		else if (elements[e] instanceof joint.shapes.basic.Quality)
-		  	datastring += "S\t";
-		else if (elements[e] instanceof joint.shapes.basic.Resource)
-		  	datastring += "R\t";
-		else
-	  		datastring += "I\t";
-
-	  	var v = elements[e].attr(".satvalue/value")
-
-	  	// treat satvalue as unknown if it is not yet defined
-	  	if((!v) || (v == "none"))
-			v = "none";
-
-		datastring += satValueDict[v];
-		datastring += "\t" + elements[e].attr(".name/text").replace(/\n/g, " ") + "\n";
+		else {
+			elementsWaiting.push(elements[e]);
+		}
 	}
 
+	// update all links
+	var savedLinks = [];
+	if (linkMode == "Relationships"){
+		var links = graph.getLinks();
+	    links.forEach(function(link){
+	        if(!isLinkInvalid(link)){
+				if (link.attr('./display') != "none")
+					savedLinks.push(link);
+					// add 1 to the node for each incoming link
+					LinkCalc[link.get("target").id] ++;
+	        }
+	        else{link.remove();}
+		});
+	}
 
-	//Step 3: Print each link in the model
+	// evaluate model
+	// when the list is not empty
+	while (elementsReady.length > 0){
+		// Get and remove the first element in the elementsReady to evaluate
+		var element = elementsReady.shift();
+		// Calculate New Evaluation by calling calculateEvaluation function
+		var satisfactionValue = calculateEvaluation(elements, savedLinks, element);
+		// update the satisfactionValue of the element and udpate the graph
+		if (satisfactionValue >= 0){
+			updateValues(element, satValueDictInverse[satisfactionValue]);
+		}
+		// bookkeeping:
+		// loop through all links in the graph and find the one with the element
+		// find the eleDest aka target of the element
+		for (var l = 0; l < savedLinks.length; l++){
+			var current = savedLinks[l]; // current is each link
+			if (current.get("source").id && current.get("source").id == element.id && current.get("target").id && inElementsWaiting(elementsWaiting, current.get("target"))){
+				var targetID = savedLinks[l].get("target").id; 
+				// check whether the children of the source have all been examed
+				// if we examined a node, we decrement the LinkCalc of its parent by 1
+				LinkCalc[targetID] --;
+				// when the target becomes a new "leaf", add it to the elementsReady and remove it from elementsWaiting
+				if (LinkCalc[targetID] == 0){
+					// udpate elementsWaiting
+					var newLeaf = null;
+					for (var p = 0; p < elementsWaiting.length; p++){
+						if (elementsWaiting[p].id == targetID){
+							newLeaf = elementsWaiting[p];
+							var temp_i = elementsWaiting.indexOf(elementsWaiting[p]);
+							elementsWaiting.splice(temp_i, 1);
+						}
+					}
+					// udpate elementsReady
+					elementsReady.push(newLeaf);
+				}
+			}
+		}
+	}
+});
+
+// calculate evaluation
+// return an int representing the new evaluation
+// elements is a list of all elements in the graph
+// element is the one that we are currently exploring
+function calculateEvaluation(elements, savedLinks, element) {
+	
+	// setup variables for bookkeeping
+	var hasDecomposition = false;
+	var decomSums = [];
+	for (var i = 0; i < 7; i++) {
+		decomSums[i] = 0;
+	}
+
+	var numContributions = 0;
+	var sums = [];
+	for (var i = 0; i < 7; i++) {
+		sums[i] = 0;
+	}
+	
+	var hasDependencies = false;
+	var dependSums = [];
+	for (var i = 0; i < 7; i++) {
+		dependSums[i] = 0;
+	}
+	
+	var hasPreconditions = false;
+	var preSums = [];
+	for (var i = 0; i < 7; i++) {
+		preSums[i] = 0;
+	}
+	
+	//Go through all links that the current node is the *target* of
+	var linksWanted = [];
 	for (var l = 0; l < savedLinks.length; l++){
-		var current = savedLinks[l];
-		var relationship = current.label(0).attrs.text.text.toUpperCase()
-		var source = "-";
-		var target = "-";
-
-		if (current.get("source").id)
-			source = graph.getCell(current.get("source").id).prop("elementid");
-		if (current.get("target").id)
-			target = graph.getCell(current.get("target").id).prop("elementid");
-
-		if (relationship.indexOf("|") > -1){
-			evolvRelationships = relationship.replace(/\s/g, '').split("|");
-			datastring += 'L\t' + evolvRelationships[0] + '\t' + source + '\t' + target + '\t' + evolvRelationships[1] + "\n";
-		}else{
-			datastring += 'L\t' + relationship + '\t' + source + '\t' + target + "\n";
+		var current = savedLinks[l]; // current is each link
+		if (current.get("target").id && current.get("target").id == element.id && current.get("source").id){
+			linksWanted.push(current);
+		} else if (current.label(0).attrs.text.text == "depends" && current.get("source").id == element.id){
+			// with exception of dependency where source is the dependerElmt, target is the dependum/dependeeElmt
+			linksWanted.push(current);
+		}
+	}
+	// get the current evaluation value of the source and target along with the link label
+	for (var l = 0; l < linksWanted.length; l++){
+		var eachLink = linksWanted[l];
+		var sourceNode = getSource(elements, eachLink.get("source").id);
+		var sVal = satValueDict[sourceNode.attr(".satvalue/value")]; // satisfaction value of the target node
+		// var tVal = satValueDict[element.attr(".satvalue/value")]; // satisfaction value of the source node
+		// four cases that we are consiedering here
+		// decomposition (and, or)
+		if (eachLink.label(0).attrs.text.text == "and" || eachLink.label(0).attrs.text.text == "or"){
+			hasDecomposition = true;
+			decomSums[sVal]++;
+		} else if (eachLink.label(0).attrs.text.text == "helps" || eachLink.label(0).attrs.text.text == "hurts" || eachLink.label(0).attrs.text.text == "makes" || eachLink.label(0).attrs.text.text == "breaks") {
+			// contributions
+			var contValue = weightedContDict[eachLink.label(0).attrs.text.text];
+			var ci = weightedContributionFunction[sVal][contValue];
+			sums[ci] ++;
+			numContributions ++;
+		} else if (eachLink.label(0).attrs.text.text == "depends"){// TODO
+			// dependency
+			hasDependencies = true;
+			dependSums[sVal] ++;
+		} else {
+			// TODO: need to figure out what kind of condition is considered as Precondition, fix the condition accordingly
+			// NeedBy?
+			hasPreconditions = true;
+			preSums[sVal]++;
 		}
 	}
 
-
-	//Step 4: Print constraints between intensions.
-	for (var e = 0; e < savedConstraints.length; e++){
-		var c = savedConstraints[e];
-		var type = c.attributes.labels[0].attrs.text.text.replace(/\s/g, '');
-		var source = c.getSourceElement().attributes.elementid;
-		var target = c.getTargetElement().attributes.elementid;
-		var sourceVar = c.attr('.constraintvar/src');
-		var targetVar = c.attr('.constraintvar/tar');
-
-		datastring += ("C\t" + type + "\t" + source + "\t" + sourceVar + "\t" + target + "\t" + targetVar + "\n");
+	var result = satValueDict[element.attr(".satvalue/value")]; // use the initia value of the element to be the initial value
+	if (hasDecomposition){
+		result = getDecomposition(decomSums, eachLink.label(0).attrs.text.text);
+	}
+		
+	if (numContributions > 0) {
+		if (hasDecomposition)
+			sums[result]++;
+		result = getQualitativeContribution(sums, numContributions);
+	}
+	
+	if (hasDependencies){
+		if (hasDecomposition || numContributions > 0) // Since result will be none we shouldn't need this condition, just the next statement.
+			dependSums[result]++;		// Add previous result to the dependSum.
+		result = getDecomposition(dependSums, "and");
 	}
 
-	console.log(datastring);
-	return datastring
+	if (hasPreconditions){
+		result = getPrecondition(preSums, result);
+	}
+	return result;
+}
+
+function getDecomposition(decomSums, type){
+	/**
+	 * return the satisfaction value of the node which has decomposition links
+	 * its arguments are:
+	 * `decomSums`: A array with a list of integers with each integer representing the numeber
+	 * of occurance of each satisfaction value associated with the ndoe
+	 * `type`: indicates types of decomposition. Either AND or OR
+	 */
+	// rules
+	var result = N;
+	var dns = decomSums[S];
+	var dnws = decomSums[PS];
+	var dnn = decomSums[N];
+	var dnwd = decomSums[PD];
+	var dnd = decomSums[D];
+	var dnc = decomSums[C];
+	var dnu = decomSums[U];
+	if (type == "and") {
+		if (dnd > 0) {
+			result = D;
+		} else if ((dnc > 0) || (dnu > 0)) {
+			result = U;
+		} else if (dnwd > 0) {
+			result = PD;
+		} else if (dnn > 0) {
+			result = N;
+		} else if (dnws > 0) {
+			result = PS;
+		} else if (dns > 0) {
+			result = S;
+		} else {
+			result = N;
+		}
+	} else if (type == "or") {
+		if (dns > 0) {
+			result = S;
+		} else if (dnws > 0) {		// CHANGED over AMYOT ET. Al. was after U conditions.
+			result = PS;				
+		} else if ((dnc > 0) || (dnu > 0)) {
+			result = U;
+		} else if (dnn > 0) {
+			result = N;
+		} else if (dnwd > 0) {
+			result = PD;
+		} else if (dnd > 0) {
+			result = D;
+		}
+	}
+	return result;
+}
+
+function getPrecondition(decomSums, linkResult){
+	var minPrecondition = N;
+	var dns = decomSums[S];
+	var dnws = decomSums[PS];
+	var dnn = decomSums[N];
+	var dnwd = decomSums[PD];
+	var dnd = decomSums[D];
+	var dnc = decomSums[C];
+	var dnu = decomSums[U];
+
+	if (dnd > 0) {
+		minPrecondition = D;
+	} else if ((dnc > 0) || (dnu > 0)) {
+		minPrecondition = U;
+	} else if (dnwd > 0) {
+		minPrecondition = PD;
+	} else if (dnn > 0) {
+		minPrecondition = N;
+	} else if (dnws > 0) {
+		minPrecondition = PS;
+	} else if (dns > 0) {
+		minPrecondition = S;
+	} else {
+		minPrecondition = N;
+	}
+	return combinePreconditionFunction[linkResult][minPrecondition];
+	
+}
+
+
+function getQualitativeContribution(sums, numRead) {
+	if (numRead == 1) 
+		for (var i = 0; i < sums.length; i++) {
+			if (sums[i] > 0){
+				return i;
+			}
+		}		
+	else {
+		var ns = sums[S];
+		var nws = sums[PS];
+		//int nn = sums[N];	//Unused Variable
+		var nwd = sums[PD];
+		var nd = sums[D];
+		var nc = sums[C];
+		var nu = sums[U];
+
+		if (nc > 0 || nu > 0)
+			return U;
+		return combineContributionsFunction[comparePS_PD(nws, nwd)][compareS_D(ns, nd)];
+	}
+	return -1;	//This line should never be reached.
+}
+
+function comparePS_PD(nws, nwd) {
+	// w1 = ws, if nws > nwd = wd, if nwd > nws = n, otherwise
+	if (nws > nwd)
+		return PS;
+	if (nwd > nws)
+		return PD;
+	if ((nws > 0) && (nwd == nws))		//November 2016: Added to prevent none variables.
+		return U;
+	return N;
+}
+
+function compareS_D(ns, nd) {
+	//w2 = c, if ns >0 && nd >0 = s, if ns >0 && nd=0 = d, if nd >0 && ns=0 = n, if ns =0 && nd=0
+	if (ns > 0 && nd > 0)
+		return C;
+	if (ns > 0 && nd == 0)
+		return S;
+	if (nd > 0 && ns == 0)
+		return D;
+	return N;
+}
+
+// check whether the element is in the elementsWaiting
+function inElementsWaiting(elementsWaiting, target) {
+	for (var l = 0; l < elementsWaiting.length; l++){
+		if (elementsWaiting[l].id == target.id ){
+			return true
+		}
+	}
+	return false
+	
+}
+
+function getSource(elements, sourceID){
+	for (var l = 0; l < elements.length; l++){
+		if (elements[l].id == sourceID){
+			return elements[l];
+		}
+	}
+}
+
+//Update the satisfaction value of a particular node in the graph
+function updateValues(cell, value){
+	var value;
+	//Update images for properties
+	if (value == "satisfied"){
+		cell.attr({ '.satvalue': {'d': 'M 0 10 L 5 20 L 20 0 L 5 20 L 0 10', 'stroke': '#00FF00', 'stroke-width':4, 'value':value}});
+	}else if(value == "partiallysatisfied") {
+		cell.attr({ '.satvalue': {'d': 'M 0 8 L 5 18 L 20 0 L 5 18 L 0 8 M 17 30 L 17 15 C 17 15 30 17 18 23', 'stroke': '#00FF00', 'stroke-width':4, 'fill':'transparent', 'value':value}});
+	}else if (value == "denied"){
+		cell.attr({ '.satvalue': {'d': 'M 0 20 L 20 0 M 10 10 L 0 0 L 20 20', 'stroke': '#FF0000', 'stroke-width': 4, 'value':value}});
+	}else if (value == "partiallydenied") {
+		cell.attr({ '.satvalue': {'d': 'M 0 15 L 15 0 M 15 15 L 0 0 M 17 30 L 17 15 C 17 15 30 17 18 23', 'stroke': '#FF0000', 'stroke-width': 4, 'fill': 'transparent', 'value':value}});
+	}else if (value == "conflict") {
+		cell.attr({ '.satvalue': {'d': 'M 0 0 L 20 8 M 20 7 L 5 15 M 5 14 L 25 23', 'stroke': '#222222', 'stroke-width': 4, 'value':value}});
+	}else if (value == "unknown") {
+		cell.attr({ '.satvalue': {'d': 'M15.255,0c5.424,0,10.764,2.498,10.764,8.473c0,5.51-6.314,7.629-7.67,9.62c-1.018,1.481-0.678,3.562-3.475,3.562\
+		    c-1.822,0-2.712-1.482-2.712-2.838c0-5.046,7.414-6.188,7.414-10.343c0-2.287-1.522-3.643-4.066-3.643\
+		    c-5.424,0-3.306,5.592-7.414,5.592c-1.483,0-2.756-0.89-2.756-2.584C5.339,3.683,10.084,0,15.255,0z M15.044,24.406\
+		    c1.904,0,3.475,1.566,3.475,3.476c0,1.91-1.568,3.476-3.475,3.476c-1.907,0-3.476-1.564-3.476-3.476\
+		    C11.568,25.973,13.137,24.406,15.044,24.406z', 'stroke': '#222222', 'stroke-width': 10, 'value':value}});
+	}else {
+		cell.removeAttr(".satvalue/d");
+	}
 }
