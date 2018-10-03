@@ -217,5 +217,5 @@ var ElementInspector = Backbone.View.extend({
   
   clear: function(){
     this.$el.html('');
-  }
+  },
 });
