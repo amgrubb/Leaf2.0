@@ -1150,9 +1150,6 @@ function calculateEvaluation(elements, savedLinks, element) {
 		result = getDecomposition(dependSums, "and");
 	}
 
-	if (hasPreconditions){
-		result = getPrecondition(preSums, result);
-	}
 	return result;
 }
 
