@@ -1023,10 +1023,11 @@ $('#frd-analysis-btn').on('click', function(){
 		var links = graph.getLinks();
 	    links.forEach(function(link){
 	        if(!isLinkInvalid(link)){
-				if (link.attr('./display') != "none")
+				if ((link.attributes.attrs[".link-type"] != "none") && (link.attributes.attrs[".link-type"] != "Qualification")){
 					savedLinks.push(link);
 					// add 1 to the node for each incoming link
 					LinkCalc[link.get("target").id] ++;
+				}
 	        }
 	        else{link.remove();}
 		});
