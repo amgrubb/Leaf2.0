@@ -1098,12 +1098,6 @@ function calculateEvaluation(elements, savedLinks, element) {
 		dependSums[i] = 0;
 	}
 	
-	var hasPreconditions = false;
-	var preSums = [];
-	for (var i = 0; i < 7; i++) {
-		preSums[i] = 0;
-	}
-	
 	//Go through all links that the current node is the *target* of
 	var linksWanted = [];
 	for (var l = 0; l < savedLinks.length; l++){
@@ -1123,7 +1117,7 @@ function calculateEvaluation(elements, savedLinks, element) {
 		// var tVal = satValueDict[element.attr(".satvalue/value")]; // satisfaction value of the source node
 		// four cases that we are consiedering here
 		// decomposition (and, or)
-		if (eachLink.label(0).attrs.text.text == "and" || eachLink.label(0).attrs.text.text == "or"){
+		if (eachLink.label(0).attrs.text.text == "and" || eachLink.label(0).attrs.text.text == "or" || eachLink.attributes.attrs[".link-type"] == "NeededBy"){
 			hasDecomposition = true;
 			decomSums[sVal]++;
 		} else if (eachLink.label(0).attrs.text.text == "helps" || eachLink.label(0).attrs.text.text == "hurts" || eachLink.label(0).attrs.text.text == "makes" || eachLink.label(0).attrs.text.text == "breaks") {
@@ -1136,17 +1130,12 @@ function calculateEvaluation(elements, savedLinks, element) {
 			// dependency
 			hasDependencies = true;
 			dependSums[sVal] ++;
-		} else {
-			// TODO: need to figure out what kind of condition is considered as Precondition, fix the condition accordingly
-			// NeedBy?
-			hasPreconditions = true;
-			preSums[sVal]++;
 		}
 	}
 
 	var result = satValueDict[element.attr(".satvalue/value")]; // use the initia value of the element to be the initial value
 	if (hasDecomposition){
-		result = getDecomposition(decomSums, eachLink.label(0).attrs.text.text);
+		result = getDecomposition(decomSums, eachLink);
 	}
 		
 	if (numContributions > 0) {
@@ -1167,7 +1156,7 @@ function calculateEvaluation(elements, savedLinks, element) {
 	return result;
 }
 
-function getDecomposition(decomSums, type){
+function getDecomposition(decomSums, eachLink){
 	/**
 	 * return the satisfaction value of the node which has decomposition links
 	 * its arguments are:
@@ -1176,6 +1165,13 @@ function getDecomposition(decomSums, type){
 	 * `type`: indicates types of decomposition. Either AND or OR
 	 */
 	// rules
+	type_ = eachLink.label(0).attrs.text.text
+	if (type_ == "Refinement") {
+		type = eachLink.label(0).attrs.text.text
+	}
+	else{
+		type = "NeededBy"
+	}
 	var result = N;
 	var dns = decomSums[S];
 	var dnws = decomSums[PS];
@@ -1184,7 +1180,7 @@ function getDecomposition(decomSums, type){
 	var dnd = decomSums[D];
 	var dnc = decomSums[C];
 	var dnu = decomSums[U];
-	if (type == "and") {
+	if (type == "and" || type == "NeededBy") {
 		if (dnd > 0) {
 			result = D;
 		} else if ((dnc > 0) || (dnu > 0)) {
@@ -1217,36 +1213,6 @@ function getDecomposition(decomSums, type){
 	}
 	return result;
 }
-
-function getPrecondition(decomSums, linkResult){
-	var minPrecondition = N;
-	var dns = decomSums[S];
-	var dnws = decomSums[PS];
-	var dnn = decomSums[N];
-	var dnwd = decomSums[PD];
-	var dnd = decomSums[D];
-	var dnc = decomSums[C];
-	var dnu = decomSums[U];
-
-	if (dnd > 0) {
-		minPrecondition = D;
-	} else if ((dnc > 0) || (dnu > 0)) {
-		minPrecondition = U;
-	} else if (dnwd > 0) {
-		minPrecondition = PD;
-	} else if (dnn > 0) {
-		minPrecondition = N;
-	} else if (dnws > 0) {
-		minPrecondition = PS;
-	} else if (dns > 0) {
-		minPrecondition = S;
-	} else {
-		minPrecondition = N;
-	}
-	return combinePreconditionFunction[linkResult][minPrecondition];
-	
-}
-
 
 function getQualitativeContribution(sums, numRead) {
 	if (numRead == 1) 
