@@ -987,6 +987,11 @@ $('#frd-analysis-btn').on('click', function(){
 	// TODO: Check to make sure there are not nodes that have more than one type of Decomposition (AND/OR/XOR) connected to them.
 	// TODO: This doesn't work in the growingleaf tool
 	var all_elements = graph.getElements();
+	var eLabelsBefore = [];
+	// store the evaluation values
+	for (var i = 0; i < all_elements.length; i++){
+		eLabelsBefore.push(all_elements[i].attr(".satvalue/value"));
+	}
 	// Filter out Actors
 	var elements = [];
 	for (var e1 = 0; e1 < all_elements.length; e1++){
@@ -1070,6 +1075,20 @@ $('#frd-analysis-btn').on('click', function(){
 				}
 			}
 		}
+	}
+
+	// after updating all the elements
+	// we check whether the before graph is the same as the after graph, if yes, pop up the error message
+	var elements_after = graph.getElements();
+	var allSame = true;
+	for (var i = 0; i < elements_after.length; i++){
+		if (elements_after[i].attr(".satvalue/value") != eLabelsBefore[i]){
+			allSame = false;
+		}
+	}
+	// show the error message if the evaluation labels for all elements doesn't change
+	if (allSame) {
+		noChangePopUp();
 	}
 });
 
@@ -1298,4 +1317,9 @@ function updateValues(cell, value){
 	}else {
 		cell.removeAttr(".satvalue/d");
 	}
+}
+
+// pop up error message when the before and after graph are the same after evaluation
+function noChangePopUp() {
+    alert("Warning: Uh-oh, something could go wrong. No change in the graph. Please check your evaluation labels.");
 }
