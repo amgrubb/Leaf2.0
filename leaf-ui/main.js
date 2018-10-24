@@ -1045,6 +1045,7 @@ $('#frd-analysis-btn').on('click', function(){
 		var element = elementsReady.shift();
 		// Calculate New Evaluation by calling calculateEvaluation function
 		var satisfactionValue = calculateEvaluation(elements, savedLinks, element);
+		// console.log(element.attr(".name/text"), element.attr(".satvalue/value"), satisfactionValue);
 		// update the satisfactionValue of the element and udpate the graph
 		if (satisfactionValue >= 0){
 			updateValues(element, satValueDictInverse[satisfactionValue]);
@@ -1196,6 +1197,7 @@ function getDecomposition(decomSums, eachLink){
 	var dnd = decomSums[D];
 	var dnc = decomSums[C];
 	var dnu = decomSums[U];
+	// console.log(dns,dnws,dnn,dnwd,dnd,dnc,dnu);
 	if (type == "and" || type == "NeededBy") {
 		if (dnd > 0) {
 			result = D;
@@ -1315,7 +1317,14 @@ function updateValues(cell, value){
 		    c1.904,0,3.475,1.566,3.475,3.476c0,1.91-1.568,3.476-3.475,3.476c-1.907,0-3.476-1.564-3.476-3.476\
 		    C11.568,25.973,13.137,24.406,15.044,24.406z', 'stroke': '#222222', 'stroke-width': 10, 'value':value}});
 	}else {
+		// case when the cell should be None
 		cell.removeAttr(".satvalue/d");
+		cell.attr(".constraints/lastval", "none");
+		cell.attr(".funcvalue/text", " ");
+		var cellView  = cell.findView(paper);
+		elementInspector.render(cellView);
+		elementInspector.$('#init-sat-value').val("none");
+		elementInspector.updateHTML(null);
 	}
 }
 
