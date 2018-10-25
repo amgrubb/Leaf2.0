@@ -987,6 +987,11 @@ $('#frd-analysis-btn').on('click', function(){
 	// TODO: Check to make sure there are not nodes that have more than one type of Decomposition (AND/OR/XOR) connected to them.
 	// TODO: This doesn't work in the growingleaf tool
 	var all_elements = graph.getElements();
+	var eLabelsBefore = [];
+	// store the evaluation values
+	for (var i = 0; i < all_elements.length; i++){
+		eLabelsBefore.push(all_elements[i].attr(".satvalue/value"));
+	}
 	// Filter out Actors
 	var elements = [];
 	for (var e1 = 0; e1 < all_elements.length; e1++){
@@ -1023,10 +1028,11 @@ $('#frd-analysis-btn').on('click', function(){
 		var links = graph.getLinks();
 	    links.forEach(function(link){
 	        if(!isLinkInvalid(link)){
-				if (link.attr('./display') != "none")
+				if ((link.attributes.attrs[".link-type"] != "none") && (link.attributes.attrs[".link-type"] != "Qualification")){
 					savedLinks.push(link);
 					// add 1 to the node for each incoming link
 					LinkCalc[link.get("target").id] ++;
+				}
 	        }
 	        else{link.remove();}
 		});
@@ -1039,6 +1045,7 @@ $('#frd-analysis-btn').on('click', function(){
 		var element = elementsReady.shift();
 		// Calculate New Evaluation by calling calculateEvaluation function
 		var satisfactionValue = calculateEvaluation(elements, savedLinks, element);
+		// console.log(element.attr(".name/text"), element.attr(".satvalue/value"), satisfactionValue);
 		// update the satisfactionValue of the element and udpate the graph
 		if (satisfactionValue >= 0){
 			updateValues(element, satValueDictInverse[satisfactionValue]);
@@ -1070,6 +1077,20 @@ $('#frd-analysis-btn').on('click', function(){
 			}
 		}
 	}
+
+	// after updating all the elements
+	// we check whether the before graph is the same as the after graph, if yes, pop up the error message
+	var elements_after = graph.getElements();
+	var allSame = true;
+	for (var i = 0; i < elements_after.length; i++){
+		if (elements_after[i].attr(".satvalue/value") != eLabelsBefore[i]){
+			allSame = false;
+		}
+	}
+	// show the error message if the evaluation labels for all elements doesn't change
+	if (allSame) {
+		noChangePopUp();
+	}
 });
 
 // calculate evaluation
@@ -1097,12 +1118,6 @@ function calculateEvaluation(elements, savedLinks, element) {
 		dependSums[i] = 0;
 	}
 	
-	var hasPreconditions = false;
-	var preSums = [];
-	for (var i = 0; i < 7; i++) {
-		preSums[i] = 0;
-	}
-	
 	//Go through all links that the current node is the *target* of
 	var linksWanted = [];
 	for (var l = 0; l < savedLinks.length; l++){
@@ -1122,7 +1137,7 @@ function calculateEvaluation(elements, savedLinks, element) {
 		// var tVal = satValueDict[element.attr(".satvalue/value")]; // satisfaction value of the source node
 		// four cases that we are consiedering here
 		// decomposition (and, or)
-		if (eachLink.label(0).attrs.text.text == "and" || eachLink.label(0).attrs.text.text == "or"){
+		if (eachLink.label(0).attrs.text.text == "and" || eachLink.label(0).attrs.text.text == "or" || eachLink.attributes.attrs[".link-type"] == "NeededBy"){
 			hasDecomposition = true;
 			decomSums[sVal]++;
 		} else if (eachLink.label(0).attrs.text.text == "helps" || eachLink.label(0).attrs.text.text == "hurts" || eachLink.label(0).attrs.text.text == "makes" || eachLink.label(0).attrs.text.text == "breaks") {
@@ -1135,17 +1150,12 @@ function calculateEvaluation(elements, savedLinks, element) {
 			// dependency
 			hasDependencies = true;
 			dependSums[sVal] ++;
-		} else {
-			// TODO: need to figure out what kind of condition is considered as Precondition, fix the condition accordingly
-			// NeedBy?
-			hasPreconditions = true;
-			preSums[sVal]++;
 		}
 	}
 
 	var result = satValueDict[element.attr(".satvalue/value")]; // use the initia value of the element to be the initial value
 	if (hasDecomposition){
-		result = getDecomposition(decomSums, eachLink.label(0).attrs.text.text);
+		result = getDecomposition(decomSums, eachLink);
 	}
 		
 	if (numContributions > 0) {
@@ -1160,13 +1170,10 @@ function calculateEvaluation(elements, savedLinks, element) {
 		result = getDecomposition(dependSums, "and");
 	}
 
-	if (hasPreconditions){
-		result = getPrecondition(preSums, result);
-	}
 	return result;
 }
 
-function getDecomposition(decomSums, type){
+function getDecomposition(decomSums, eachLink){
 	/**
 	 * return the satisfaction value of the node which has decomposition links
 	 * its arguments are:
@@ -1175,6 +1182,13 @@ function getDecomposition(decomSums, type){
 	 * `type`: indicates types of decomposition. Either AND or OR
 	 */
 	// rules
+	type_ = eachLink.label(0).attrs.text.text
+	if (type_ == "Refinement") {
+		type = eachLink.label(0).attrs.text.text
+	}
+	else{
+		type = "NeededBy"
+	}
 	var result = N;
 	var dns = decomSums[S];
 	var dnws = decomSums[PS];
@@ -1183,7 +1197,8 @@ function getDecomposition(decomSums, type){
 	var dnd = decomSums[D];
 	var dnc = decomSums[C];
 	var dnu = decomSums[U];
-	if (type == "and") {
+	// console.log(dns,dnws,dnn,dnwd,dnd,dnc,dnu);
+	if (type == "and" || type == "NeededBy") {
 		if (dnd > 0) {
 			result = D;
 		} else if ((dnc > 0) || (dnu > 0)) {
@@ -1216,36 +1231,6 @@ function getDecomposition(decomSums, type){
 	}
 	return result;
 }
-
-function getPrecondition(decomSums, linkResult){
-	var minPrecondition = N;
-	var dns = decomSums[S];
-	var dnws = decomSums[PS];
-	var dnn = decomSums[N];
-	var dnwd = decomSums[PD];
-	var dnd = decomSums[D];
-	var dnc = decomSums[C];
-	var dnu = decomSums[U];
-
-	if (dnd > 0) {
-		minPrecondition = D;
-	} else if ((dnc > 0) || (dnu > 0)) {
-		minPrecondition = U;
-	} else if (dnwd > 0) {
-		minPrecondition = PD;
-	} else if (dnn > 0) {
-		minPrecondition = N;
-	} else if (dnws > 0) {
-		minPrecondition = PS;
-	} else if (dns > 0) {
-		minPrecondition = S;
-	} else {
-		minPrecondition = N;
-	}
-	return combinePreconditionFunction[linkResult][minPrecondition];
-	
-}
-
 
 function getQualitativeContribution(sums, numRead) {
 	if (numRead == 1) 
@@ -1332,6 +1317,18 @@ function updateValues(cell, value){
 		    c1.904,0,3.475,1.566,3.475,3.476c0,1.91-1.568,3.476-3.475,3.476c-1.907,0-3.476-1.564-3.476-3.476\
 		    C11.568,25.973,13.137,24.406,15.044,24.406z', 'stroke': '#222222', 'stroke-width': 10, 'value':value}});
 	}else {
+		// case when the cell should be None
 		cell.removeAttr(".satvalue/d");
+		cell.attr(".constraints/lastval", "none");
+		cell.attr(".funcvalue/text", " ");
+		var cellView  = cell.findView(paper);
+		elementInspector.render(cellView);
+		elementInspector.$('#init-sat-value').val("none");
+		elementInspector.updateHTML(null);
 	}
+}
+
+// pop up error message when the before and after graph are the same after evaluation
+function noChangePopUp() {
+    alert("Warning: Uh-oh, something could go wrong. No change in the graph. Please check your evaluation labels.");
 }
