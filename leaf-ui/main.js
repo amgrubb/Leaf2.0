@@ -1332,3 +1332,40 @@ function updateValues(cell, value){
 function noChangePopUp() {
     alert("Warning: Uh-oh, something could go wrong. No change in the graph. Please check your evaluation labels.");
 }
+
+////////////////////////////////////////////////////////
+// Functions for the University of Huddersfield Study //
+////////////////////////////////////////////////////////
+$('#hud-save-model-btn').on('click', function() {
+	var date = new Date();
+	var timestamp = date.getTime();
+	var name = window.prompt("Please enter the file code.");
+	if (name){
+		var fileName = name + "-" + timestamp + ".json";
+		//Old Download Code:
+		//download(fileName, JSON.stringify(graph.toJSON()));
+
+		//Print Graph to Console.
+		var callData = {};
+		callData["file_name"] = fileName;
+		callData["graph"] = graph.toJSON();
+
+		console.log(JSON.stringify(callData));
+		
+		//backend script called
+		var pathToCGI = "./cgi-bin/backendCom.cgi";
+
+		$.ajax({
+			url: pathToCGI,
+			type: "post",
+			contentType: "json",
+			data:JSON.stringify(callData),
+			success: function(response){
+
+			}
+		})	.fail(function(){
+			msg = "Error: File Not Sent.";
+			alert(msg);
+		});
+	}
+});
