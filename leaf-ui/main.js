@@ -1369,3 +1369,8 @@ $('#hud-save-model-btn').on('click', function() {
 		});
 	}
 });
+
+$('#hud-open-base-btn').on('click', function() {
+	// Opens the Base Model
+});
+
