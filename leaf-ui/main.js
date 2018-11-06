@@ -936,7 +936,6 @@ loader.onchange = function(){
 };
 
 var loader_default = document.getElementById("loader_default");
-reader = new FileReader();
 
 //Whenever the input is changed, read the file.
 loader_default.onchange = function(){
