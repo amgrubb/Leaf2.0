@@ -1372,6 +1372,9 @@ $('#hud-save-model-btn').on('click', function() {
 
 $('#hud-open-base-btn').on('click', function() {
 	// Opens the Base Model
-	$('#loader').click();
+	$.getJSON('http://www.cs.toronto.edu/~amgrubb/huddersfield/cgi-bin/baseModels/and.json', function(myData){		
+	   var response = JSON.stringify(myData);
+	   var newModel = new Blob([response], {type : 'application/json'});
+	   reader.readAsText(newModel);  	
+   });
 });
-
