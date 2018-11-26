@@ -1181,7 +1181,7 @@ function calculateEvaluation(elements, savedLinks, element) {
 	if (hasDependencies){
 		if (hasDecomposition || numContributions > 0) // Since result will be none we shouldn't need this condition, just the next statement.
 			dependSums[result]++;		// Add previous result to the dependSum.
-		result = getDecomposition(dependSums, "and");
+		result = getDecomposition(dependSums, eachLink);
 	}
 
 	return result;
