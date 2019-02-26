@@ -3,3 +3,4 @@ leaf-ui/rappid/*.*
 leaf-ui/rappid/*/*
 leaf-ui/rappid/*
 !leaf-ui/rappid/README.md
+.DS_Store
