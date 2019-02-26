@@ -34,6 +34,7 @@
                 </div>
                 <button id="btn-save" class="btn">Save</button>
                 <button id="btn-load" class="btn">Load</button>
+                <button id="btn-load-sample-mdl" class="btn">Load Sample Model</button>
             </div>
 
             <button id="btn-zoom-in" class="btn">Zoom In</button>
@@ -41,6 +42,7 @@
             <button id="btn-svg" class="btn">Open as SVG</button>
             <button id="btn-png" class="btn">Open as PNG</button>
             <input type="file" id="loader" style="display:none">
+            <input id="loader_default" name="./sample_model.json" style="display:none">
 
             <!-- <button id="btn-save-leaf" class="btn"> Export .leaf </button> -->
 
@@ -89,7 +91,6 @@
             return toElement.getScreenCTM().inverse().multiply(this.getScreenCTM());
         };
         </script>
-
         <script src="./rappid/lib/jquery/jquery.min.js"></script>
         <script src="./rappid/lib/lodash/lodash.min.js"></script>
         <script src="./rappid/lib/backbone/backbone-min.js"></script>
@@ -116,6 +117,7 @@
         <script src="./rappid-extensions/joint.extensions.js"></script>
 
         <script src="./main.js"></script>
+        <script src="./file.js"></script>
 
         <div class = "attribution"> 
             <img src="http://upload.wikimedia.org/wikipedia/en/0/04/Utoronto_coa.svg" style="width:25%;height:25%;float:left">
