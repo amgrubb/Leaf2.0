@@ -1336,12 +1336,49 @@ function noChangePopUp() {
 ////////////////////////////////////////////////////////
 // Functions for the University of Huddersfield Study //
 ////////////////////////////////////////////////////////
-$('#hud-save-model-btn').on('click', function() {
+//<a id="hud-save-extended-model-btn">Send Extended Model</a>
+//<a id="hud-save-final-model-btn">Send Final Model</a>
+
+$('#hud-save-extended-model-btn').on('click', function() {
 	var date = new Date();
 	var timestamp = date.getTime();
-	var name = window.prompt("Please enter the file code.");
+	var name = window.prompt("Please enter your Group ID code.");
 	if (name){
-		var fileName = name + "-" + timestamp + ".json";
+		var fileName = name + "-EX-" + timestamp + ".json";
+		//Old Download Code:
+		//download(fileName, JSON.stringify(graph.toJSON()));
+
+		//Print Graph to Console.
+		var callData = {};
+		callData["file_name"] = fileName;
+		callData["graph"] = graph.toJSON();
+
+		console.log(JSON.stringify(callData));
+		
+		//backend script called
+		var pathToCGI = "./cgi-bin/backendCom.cgi";
+
+		$.ajax({
+			url: pathToCGI,
+			type: "post",
+			contentType: "json",
+			data:JSON.stringify(callData),
+			success: function(response){
+
+			}
+		})	.fail(function(){
+			msg = "Error: File Not Sent.";
+			alert(msg);
+		});
+	}
+});
+
+$('#hud-save-final-model-btn').on('click', function() {
+	var date = new Date();
+	var timestamp = date.getTime();
+	var name = window.prompt("Please enter your Group ID code.");
+	if (name){
+		var fileName = name + "-FN-" + timestamp + ".json";
 		//Old Download Code:
 		//download(fileName, JSON.stringify(graph.toJSON()));
 
