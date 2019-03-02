@@ -1023,7 +1023,7 @@ $('#frd-analysis-btn').on('click', function(){
 			elementsWaiting.push(elements[e]);
 		}
 	}
-	
+// Beginning of Charles' Update
 	// update all links
 	var savedLinks = [];
 	if (linkMode == "Relationships"){
@@ -1033,7 +1033,12 @@ $('#frd-analysis-btn').on('click', function(){
 				if ((link.attributes.attrs[".link-type"] != "none") && (link.attributes.attrs[".link-type"] != "Qualification")){
 					savedLinks.push(link);
 					// add 1 to the node for each incoming link
-					LinkCalc[link.get("target").id] ++;
+					if (link.label(0).attrs.text.text != "depends"){
+						LinkCalc[link.get("target").id] ++;
+					}
+					else {// for dependency link, source and target are the inverse of the regular link
+						LinkCalc[link.get("source").id] ++;
+					}
 				}
 	        }
 	        else{link.remove();}
@@ -1057,8 +1062,29 @@ $('#frd-analysis-btn').on('click', function(){
 		// find the eleDest aka target of the element
 		for (var l = 0; l < savedLinks.length; l++){
 			var current = savedLinks[l]; // current is each link
-			if (current.get("source").id && current.get("source").id == element.id && current.get("target").id && inElementsWaiting(elementsWaiting, current.get("target"))){
+			if (current.label(0).attrs.text.text != "depends" && current.get("source").id && current.get("source").id == element.id && current.get("target").id && inElementsWaiting(elementsWaiting, current.get("target"))){
 				var targetID = savedLinks[l].get("target").id; 
+				// check whether the children of the source have all been examed
+				// if we examined a node, we decrement the LinkCalc of its parent by 1
+				LinkCalc[targetID] --;
+				// when the target becomes a new "leaf", add it to the elementsReady and remove it from elementsWaiting
+				if (LinkCalc[targetID] == 0){
+					// udpate elementsWaiting
+					var newLeaf = null;
+					for (var p = 0; p < elementsWaiting.length; p++){
+						if (elementsWaiting[p].id == targetID){
+							newLeaf = elementsWaiting[p];
+							var temp_i = elementsWaiting.indexOf(elementsWaiting[p]);
+							elementsWaiting.splice(temp_i, 1);
+						}
+					}
+					// udpate elementsReady
+					elementsReady.push(newLeaf);
+				}
+			}
+			// handle dependency here
+			else if (current.label(0).attrs.text.text == "depends" && current.get("source").id && current.get("target").id == element.id && current.get("target").id && inElementsWaiting(elementsWaiting, current.get("source"))){
+				var targetID = savedLinks[l].get("source").id; 
 				// check whether the children of the source have all been examed
 				// if we examined a node, we decrement the LinkCalc of its parent by 1
 				LinkCalc[targetID] --;
@@ -1124,9 +1150,10 @@ function calculateEvaluation(elements, savedLinks, element) {
 	var linksWanted = [];
 	for (var l = 0; l < savedLinks.length; l++){
 		var current = savedLinks[l]; // current is each link
-		if (current.get("target").id && current.get("target").id == element.id && current.get("source").id){
+		if (current.label(0).attrs.text.text != "depends" && current.get("target").id && current.get("target").id == element.id && current.get("source").id){
 			linksWanted.push(current);
-		} else if (current.label(0).attrs.text.text == "depends" && current.get("source").id == element.id){
+		} 
+		else if (current.label(0).attrs.text.text == "depends" && current.get("target").id && current.get("source").id == element.id && current.get("source").id){
 			// with exception of dependency where source is the dependerElmt, target is the dependum/dependeeElmt
 			linksWanted.push(current);
 		}
@@ -1136,7 +1163,9 @@ function calculateEvaluation(elements, savedLinks, element) {
 		var eachLink = linksWanted[l];
 		var sourceNode = getSource(elements, eachLink.get("source").id);
 		var sVal = satValueDict[sourceNode.attr(".satvalue/value")]; // satisfaction value of the target node
-		// var tVal = satValueDict[element.attr(".satvalue/value")]; // satisfaction value of the source node
+		var targetNode = getTarget(elements, eachLink.get("target").id);
+		var tVal = satValueDict[targetNode.attr(".satvalue/value")]; // satisfaction value of the source node
+		
 		// four cases that we are consiedering here
 		// decomposition (and, or)
 		if (eachLink.label(0).attrs.text.text == "and" || eachLink.label(0).attrs.text.text == "or" || eachLink.attributes.attrs[".link-type"] == "NeededBy"){
@@ -1148,10 +1177,10 @@ function calculateEvaluation(elements, savedLinks, element) {
 			var ci = weightedContributionFunction[sVal][contValue];
 			sums[ci] ++;
 			numContributions ++;
-		} else if (eachLink.label(0).attrs.text.text == "depends"){// TODO
+		} else if (eachLink.label(0).attrs.text.text == "depends"){
 			// dependency
 			hasDependencies = true;
-			dependSums[sVal] ++;
+			dependSums[tVal] ++;
 		}
 	}
 
@@ -1169,7 +1198,7 @@ function calculateEvaluation(elements, savedLinks, element) {
 	if (hasDependencies){
 		if (hasDecomposition || numContributions > 0) // Since result will be none we shouldn't need this condition, just the next statement.
 			dependSums[result]++;		// Add previous result to the dependSum.
-		result = getDecomposition(dependSums, "and");
+		result = getDecomposition(dependSums, eachLink);
 	}
 
 	return result;
@@ -1286,8 +1315,7 @@ function inElementsWaiting(elementsWaiting, target) {
 			return true
 		}
 	}
-	return false
-	
+	return false	
 }
 
 function getSource(elements, sourceID){
@@ -1297,6 +1325,15 @@ function getSource(elements, sourceID){
 		}
 	}
 }
+
+function getTarget(elements, targetID){
+	for (var l = 0; l < elements.length; l++){
+		if (elements[l].id == targetID){
+			return elements[l];
+		}
+	}
+}
+// End of Charles' Update
 
 //Update the satisfaction value of a particular node in the graph
 function updateValues(cell, value){
