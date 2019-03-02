@@ -978,6 +978,9 @@ function download(filename, text) {
 	document.body.removeChild(dl);
 }
 
+// TODO: Add 
+//$('#rnd-analysis-btn').on('click', function(){
+
 // ----------------------------------------------------------------- //
 // forward analysis
 $('#frd-analysis-btn').on('click', function(){
@@ -985,7 +988,6 @@ $('#frd-analysis-btn').on('click', function(){
 	// analysis
 	// Question: how do you update the drawing and also the elementInspector value together
 	// TODO: Check to make sure there are not nodes that have more than one type of Decomposition (AND/OR/XOR) connected to them.
-	// TODO: This doesn't work in the growingleaf tool
 	var all_elements = graph.getElements();
 	var eLabelsBefore = [];
 	// store the evaluation values
@@ -1021,7 +1023,7 @@ $('#frd-analysis-btn').on('click', function(){
 			elementsWaiting.push(elements[e]);
 		}
 	}
-
+	
 	// update all links
 	var savedLinks = [];
 	if (linkMode == "Relationships"){
