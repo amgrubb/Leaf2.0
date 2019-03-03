@@ -464,10 +464,12 @@ paper.on('cell:pointerup', function(cellView, evt) {
 	// Link
 	if (cellView.model instanceof joint.dia.Link){
 		var link = cellView.model;
-		// var sourceCell = link.getSourceElement().attributes.type;
+		var initiallinktype = link.attr(".link-type");
 		setLinkType(link);
 		var linktype = link.attr(".link-type");
-		drawDefaultLink(link, linktype);
+		// Only update link if there has been a change in type. Undefined->Error, Error->Contribution.
+		if (initiallinktype != linktype)
+			drawDefaultLink(link, linktype);
 
 		// Check if link is valid or not
 		if (link.getTargetElement()){
