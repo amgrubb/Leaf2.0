@@ -831,6 +831,15 @@ KeyboardJS.on('del', function(){
 KeyboardJS.on('backspace', function(){
 
 });
+// Override browser's default action when refresh key is pressed
+KeyboardJS.on('ctrl + r', function(){
+	console.log("Refresh denied.")
+	return false;
+});
+KeyboardJS.on('command + r, ctrl + r', function() {
+	console.log("Mac Refresh denied.")
+	return false;
+});
 // ----------------------------------------------------------------- //
 // Toolbar
 
@@ -1170,7 +1179,6 @@ $('#frd-analysis-btn').on('click', function(){
 			elementsWaiting.push(elements[e]);
 		}
 	}
-// Beginning of Charles' Update
 	// update all links
 	var savedLinks = [];
 	if (linkMode == "Relationships"){
@@ -1480,7 +1488,6 @@ function getTarget(elements, targetID){
 		}
 	}
 }
-// End of Charles' Update
 
 //Update the satisfaction value of a particular node in the graph
 function updateValues(cell, value){
