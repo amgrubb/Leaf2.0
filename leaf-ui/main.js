@@ -732,11 +732,12 @@ function isLeaf(cell){
 		}
 	}
 
+	// Lone items can count 
 	// If no outbound and inbound link, do not highlight anything
 	// If all outbound links are qualification, and all inbound links are qualification, do not highlight anything
-	if (outboundLinks.length == outboundQualificationCount && inboundLinks.length == inboundQualificationCount){
-		return false;
-	}
+	//if (outboundLinks.length == outboundQualificationCount && inboundLinks.length == inboundQualificationCount){
+	//	return false;
+	//}
 
 	return true;
 }
@@ -980,16 +981,160 @@ function download(filename, text) {
 	document.body.removeChild(dl);
 }
 
-// TODO: Add 
-//$('#rnd-analysis-btn').on('click', function(){
+// Random Analysis - Based on Forward Propagation Algorithm.
+// TODO: Merge with Forward analysis algrorithm. Only "Code Specific to Random Analysis" is different.
+$('#rnd-analysis-btn').on('click', function(){
+	var all_elements = graph.getElements();
+	var eLabelsBefore = [];
+	// store the evaluation values
+	for (var i = 0; i < all_elements.length; i++){
+		eLabelsBefore.push(all_elements[i].attr(".satvalue/value"));
+	}
+	// Filter out Actors
+	var elements = [];
+	for (var e1 = 0; e1 < all_elements.length; e1++){
+		if (!(all_elements[e1] instanceof joint.shapes.basic.Actor)){
+			elements.push(all_elements[e1]);
+		}
+	}
+
+	// loop through all elements and build a dictionary of {id:LinkCalc}
+	// with LinkCalc represents the number of imcoming links to the element
+	var LinkCalc = {};
+	// step 1: get a list of all elements and put leaves to the elementsReady, other elements to elementsWaiting
+	var elementsReady = [];
+	var elementsWaiting = [];
+	for (var e = 0; e < elements.length; e++){
+		// initialize all nodes with 0
+		LinkCalc[elements[e].id] = 0;
+		// set up elementID
+		var elementID = e.toString();
+		while (elementID.length < 4){ elementID = "0" + elementID;}
+		elements[e].prop("elementid", elementID);
+		// check if it is leaf node or not, assign to elementsReady if yes; assign to elementsWaiting if no
+		if (isLeaf(elements[e])){
+			elementsReady.push(elements[e]);
+		}
+		else {
+			elementsWaiting.push(elements[e]);
+		}
+	}
+
+	//Begin: Code Specific to Random Analysis
+	for (var i = 0; i < elementsReady.length; i++){
+		console.log(elementsReady[i].attr(".satvalue/value"));
+		//Give leaves random value.
+		element = elementsReady[i];
+		// Get random number bettwen 0..3
+		var randNum = Math.floor(Math.random() * 4);
+		var satVal = satValueDictInverse[randNum];
+		// Assign sat value based on values.
+		updateValues(element, satVal);		
+	}	
+	//End: Code Specific to Random Analysis
+
+	// update all links
+	var savedLinks = [];
+	if (linkMode == "Relationships"){
+		var links = graph.getLinks();
+	    links.forEach(function(link){
+	        if(!isLinkInvalid(link)){
+				if ((link.attributes.attrs[".link-type"] != "none") && (link.attributes.attrs[".link-type"] != "Qualification")){
+					savedLinks.push(link);
+					// add 1 to the node for each incoming link
+					if (link.label(0).attrs.text.text != "depends"){
+						LinkCalc[link.get("target").id] ++;
+					}
+					else {// for dependency link, source and target are the inverse of the regular link
+						LinkCalc[link.get("source").id] ++;
+					}
+				}
+	        }
+	        else{link.remove();}
+		});
+	}
+
+	// evaluate model
+	// when the list is not empty
+	while (elementsReady.length > 0){
+		// Get and remove the first element in the elementsReady to evaluate
+		var element = elementsReady.shift();
+		// Calculate New Evaluation by calling calculateEvaluation function
+		var satisfactionValue = calculateEvaluation(elements, savedLinks, element);
+		// console.log(element.attr(".name/text"), element.attr(".satvalue/value"), satisfactionValue);
+		// update the satisfactionValue of the element and udpate the graph
+		if (satisfactionValue >= 0){
+			updateValues(element, satValueDictInverse[satisfactionValue]);
+		}
+		// bookkeeping:
+		// loop through all links in the graph and find the one with the element
+		// find the eleDest aka target of the element
+		for (var l = 0; l < savedLinks.length; l++){
+			var current = savedLinks[l]; // current is each link
+			if (current.label(0).attrs.text.text != "depends" && current.get("source").id && current.get("source").id == element.id && current.get("target").id && inElementsWaiting(elementsWaiting, current.get("target"))){
+				var targetID = savedLinks[l].get("target").id; 
+				// check whether the children of the source have all been examed
+				// if we examined a node, we decrement the LinkCalc of its parent by 1
+				LinkCalc[targetID] --;
+				// when the target becomes a new "leaf", add it to the elementsReady and remove it from elementsWaiting
+				if (LinkCalc[targetID] == 0){
+					// udpate elementsWaiting
+					var newLeaf = null;
+					for (var p = 0; p < elementsWaiting.length; p++){
+						if (elementsWaiting[p].id == targetID){
+							newLeaf = elementsWaiting[p];
+							var temp_i = elementsWaiting.indexOf(elementsWaiting[p]);
+							elementsWaiting.splice(temp_i, 1);
+						}
+					}
+					// udpate elementsReady
+					elementsReady.push(newLeaf);
+				}
+			}
+			// handle dependency here
+			else if (current.label(0).attrs.text.text == "depends" && current.get("source").id && current.get("target").id == element.id && current.get("target").id && inElementsWaiting(elementsWaiting, current.get("source"))){
+				var targetID = savedLinks[l].get("source").id; 
+				// check whether the children of the source have all been examed
+				// if we examined a node, we decrement the LinkCalc of its parent by 1
+				LinkCalc[targetID] --;
+				// when the target becomes a new "leaf", add it to the elementsReady and remove it from elementsWaiting
+				if (LinkCalc[targetID] == 0){
+					// udpate elementsWaiting
+					var newLeaf = null;
+					for (var p = 0; p < elementsWaiting.length; p++){
+						if (elementsWaiting[p].id == targetID){
+							newLeaf = elementsWaiting[p];
+							var temp_i = elementsWaiting.indexOf(elementsWaiting[p]);
+							elementsWaiting.splice(temp_i, 1);
+						}
+					}
+					// udpate elementsReady
+					elementsReady.push(newLeaf);
+				}
+			}
+		}
+	}
+
+	// // after updating all the elements
+	// // we check whether the before graph is the same as the after graph, if yes, pop up the error message
+	// var elements_after = graph.getElements();
+	// var allSame = true;
+	// for (var i = 0; i < elements_after.length; i++){
+	// 	if (elements_after[i].attr(".satvalue/value") != eLabelsBefore[i]){
+	// 		allSame = false;
+	// 	}
+	// }
+	// // show the error message if the evaluation labels for all elements doesn't change
+	// if (allSame) {
+	// 	noChangePopUp();
+	// }
+});
 
 // ----------------------------------------------------------------- //
-// forward analysis
+// Forward Analysis: A propagation algorithm from leaves to roots.
 $('#frd-analysis-btn').on('click', function(){
-	// propogation
-	// analysis
-	// Question: how do you update the drawing and also the elementInspector value together
-	// TODO: Check to make sure there are not nodes that have more than one type of Decomposition (AND/OR/XOR) connected to them.
+	// Charlie Question: how do you update the drawing and also the elementInspector value together
+	// Charlie TODO: Check to make sure there are not nodes that have more than one type of Decomposition (AND/OR/XOR) connected to them.
 	var all_elements = graph.getElements();
 	var eLabelsBefore = [];
 	// store the evaluation values
