@@ -451,7 +451,6 @@ function drawDefaultLink(link, linktype){
 	}
 }
 
-//When a cell is clicked, create the Halo
 function isLinkInvalid(link){
 	return (!link.prop('source/id') || !link.prop('target/id'));
 }
@@ -1178,7 +1177,9 @@ $('#frd-analysis-btn').on('click', function(){
 	// Filter out Actors
 	var elements = [];
 	for (var e1 = 0; e1 < all_elements.length; e1++){
-		if (!(all_elements[e1] instanceof joint.shapes.basic.Actor)){
+		//if (!(all_elements[e1] instanceof joint.shapes.basic.Actor)){
+		if ((!(all_elements[e1] instanceof joint.shapes.basic.Actor))&&
+			(!(all_elements[e1] instanceof joint.shapes.basic.Actor2))){
 			elements.push(all_elements[e1]);
 		}
 	}
@@ -1209,19 +1210,24 @@ $('#frd-analysis-btn').on('click', function(){
 	if (linkMode == "Relationships"){
 		var links = graph.getLinks();
 	    links.forEach(function(link){
-	        if(!isLinkInvalid(link)){
-				if ((link.attributes.attrs[".link-type"] != "none") && (link.attributes.attrs[".link-type"] != "Qualification")){
-					savedLinks.push(link);
+	    	if(!isLinkInvalid(link)){							
 					// add 1 to the node for each incoming link
-					if (link.label(0).attrs.text.text != "depends"){
-						LinkCalc[link.get("target").id] ++;
+					if (link.label(0).attrs.text.text == "depends"){
+						var targetCell = link.getTargetElement();
+						if(!(targetCell instanceof joint.shapes.basic.Actor2)){
+							savedLinks.push(link);
+							LinkCalc[link.get("target").id] ++;
+						}
 					}
-					else {// for dependency link, source and target are the inverse of the regular link
+					//else {// for dependency link, source and target are the inverse of the regular link
+					else if ((link.attributes.attrs[".link-type"] != "none") && 
+									(link.attributes.attrs[".link-type"] != "Qualification")){
+						savedLinks.push(link);
 						LinkCalc[link.get("source").id] ++;
 					}
+				}else{
+					link.remove();
 				}
-	        }
-	        else{link.remove();}
 		});
 	}
 
