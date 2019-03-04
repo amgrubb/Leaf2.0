@@ -546,6 +546,10 @@ function searchRoot(cell, originalCell, path){
 	}
 	// If first time calling it, set originalCell to cell
 	if (originalCell == null){
+		if ((cell instanceof joint.shapes.basic.Actor2) ||
+			  (cell instanceof joint.shapes.basic.Actor)) {
+			return;
+		}
 		originalCell = cell;
 	}
 	// if path is null, then create an empty array 
@@ -595,8 +599,14 @@ function isRoot(cell){
 
 	for (var i = inboundLinks.length - 1; i >= 0; i--) {
 		var linkType = inboundLinks[i].attr('.link-type')
-		if (linkType == 'Error' || linkType == 'Dependency' || linkType == 'Actor' ){
+		if (linkType == 'Error' || linkType == 'Actor' ){
 			return false;
+		}
+		if (linkType == 'Dependency'){
+			var sourceCell = inboundLinks[i].getSourceElement();
+			if (!(sourceCell instanceof joint.shapes.basic.Actor2)){
+				return false;
+			}
 		}
 		if (linkType == 'Qualification'){
 			inboundQualificationCount = inboundQualificationCount + 1;
@@ -634,9 +644,11 @@ function getPossibleRootQueue(cell){
 	var inboundLinks = graph.getConnectedLinks(cell, {inbound: true});
 	for (var i = inboundLinks.length - 1; i >= 0; i--) {
 		var linkType = inboundLinks[i].attr('.link-type')
-		if (linkType == 'Dependency' || linkType == 'Actor'){
+		if (linkType == 'Dependency'){ // || linkType == 'Actor'){ //'Actors not roots.'
 			var sourceCell = inboundLinks[i].getSourceElement();
-			queue.push(sourceCell);
+			if (!(sourceCell instanceof joint.shapes.basic.Actor2)){
+				queue.push(sourceCell);
+			}
 		}
 	}
 
@@ -664,6 +676,10 @@ function searchLeaf(cell, originalCell, path){
 	}
 	// If first time calling it, set originalCell to cell
 	if (originalCell == null){
+		if ((cell instanceof joint.shapes.basic.Actor2) ||
+			  (cell instanceof joint.shapes.basic.Actor)) {
+			return;
+		}
 		originalCell = cell;
 	}
 	// if path is null, then create an empty array 
@@ -711,11 +727,16 @@ function isLeaf(cell){
 	var inboundQualificationCount = 0;
 	var outboundQualificationCount = 0;
 
-
 	for (var i = outboundLinks.length - 1; i >= 0; i--) {
 		var linkType = outboundLinks[i].attr('.link-type')
-		if (linkType == 'Error' || linkType == 'Dependency' || linkType == 'Actor' ){
+		if (linkType == 'Error' || linkType == 'Actor' ){
 			return false;
+		}
+		if (linkType == 'Dependency'){
+				var targetCell = outboundLinks[i].getTargetElement();
+				if (!(targetCell instanceof joint.shapes.basic.Actor2)){
+					return false;
+				}
 		}
 		if (linkType == 'Qualification'){
 			outboundQualificationCount = outboundQualificationCount + 1;
@@ -757,7 +778,9 @@ function getPossibleLeafQueue(cell){
 		var linkType = outboundLinks[i].attr('.link-type')
 		if (linkType == 'Dependency' || linkType == 'Actor'){
 			var targetCell = outboundLinks[i].getTargetElement();
-			queue.push(targetCell);
+			if (!(targetCell instanceof joint.shapes.basic.Actor2)){
+				queue.push(targetCell);
+			}
 		}
 	}
 
@@ -840,7 +863,7 @@ KeyboardJS.on('ctrl + r', function(){
 });
 KeyboardJS.on('command + r, ctrl + r', function() {
 	console.log("Mac Refresh denied.")
-	return false;
+	//return false;		// TODO: Uncomment before study.
 });
 // ----------------------------------------------------------------- //
 // Toolbar
