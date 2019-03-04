@@ -558,12 +558,12 @@ function searchRoot(cell, originalCell, path){
 		cell.attr('.outer/stroke-width', '5');
 		cell.attr('.outer/stroke-dasharray', '');
 
-		return;
+		return;	// Stop this search when root is found.
 	}
 	// A list of nodes to find next
-	var queue = enQueue1(cell);
+	var possRootQueue = getPossibleRootQueue(cell);
 	// If no more node to search for, we are done
-	if (queue.length == 0){
+	if (possRootQueue.length == 0){
 		return;
 	}
 	// append all elements in queue to the path
@@ -577,8 +577,8 @@ function searchRoot(cell, originalCell, path){
 		}	
 	}
 	// Call searchRoot for all nodes in queue
-	for (var i = queue.length - 1; i >= 0; i--) {
-		searchRoot(queue[i], originalCell, path);
+	for (var i = possRootQueue.length - 1; i >= 0; i--) {
+		searchRoot(possRootQueue[i], originalCell, path);
 	}
 
 	return;
@@ -628,7 +628,7 @@ function isRoot(cell){
 // A dependency/actor link going from P to current node
 // Or
 // A refinement, contribution, neededby link from current node to P
-function enQueue1(cell){
+function getPossibleRootQueue(cell){
 	var queue = [];
 	var outboundLinks = graph.getConnectedLinks(cell, {outbound: true});
 	var inboundLinks = graph.getConnectedLinks(cell, {inbound: true});
@@ -679,9 +679,9 @@ function searchLeaf(cell, originalCell, path){
 		return;
 	}
 	// A list of nodes to find next
-	var queue = enQueue2(cell);
+	var possLeafQueue = getPossibleLeafQueue(cell);
 	// If no more node to search for, we are done
-	if (queue.length == 0){
+	if (possLeafQueue.length == 0){
 		return;
 	}
 	// append all elements in queue to the path
@@ -695,8 +695,8 @@ function searchLeaf(cell, originalCell, path){
 		}
 	}
 	// Call searchLeaf for all nodes in queue
-	for (var i = queue.length - 1; i >= 0; i--) {
-		searchLeaf(queue[i], originalCell, path);
+	for (var i = possLeafQueue.length - 1; i >= 0; i--) {
+		searchLeaf(possLeafQueue[i], originalCell, path);
 	}
 
 	return;
@@ -725,6 +725,7 @@ function isLeaf(cell){
 	for (var i = inboundLinks.length - 1; i >= 0; i--) {
 		var linkType = inboundLinks[i].attr('.link-type')
 		if (linkType == 'Error' || (linkType != 'Dependency' && linkType != 'Actor' && linkType != 'Qualification')){
+		//if (linkType == 'Error' || linkType == 'Actor' || linkType == 'Contribution' || linkType == 'Refinement'){
 			return false;
 		}
 		if (linkType == 'Qualification'){
@@ -735,9 +736,10 @@ function isLeaf(cell){
 	// Lone items can count 
 	// If no outbound and inbound link, do not highlight anything
 	// If all outbound links are qualification, and all inbound links are qualification, do not highlight anything
-	//if (outboundLinks.length == outboundQualificationCount && inboundLinks.length == inboundQualificationCount){
-	//	return false;
-	//}
+	if (outboundQualificationCount != 0 && inboundQualificationCount != 0 && 
+		outboundLinks.length == outboundQualificationCount && inboundLinks.length == inboundQualificationCount){
+		return false;
+	}
 
 	return true;
 }
@@ -747,7 +749,7 @@ function isLeaf(cell){
 // A dependency/actor link going from current node to C
 // Or
 // A refinement, contribution, qualification, neededby link from C to current node
-function enQueue2(cell){
+function getPossibleLeafQueue(cell){
 	var queue = [];
 	var outboundLinks = graph.getConnectedLinks(cell, {outbound: true});
 	var inboundLinks = graph.getConnectedLinks(cell, {inbound: true});
