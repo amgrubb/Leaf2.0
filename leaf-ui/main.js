@@ -1070,20 +1070,20 @@ $('#rnd-analysis-btn').on('click', function(){
 	var savedLinks = [];
 	if (linkMode == "Relationships"){
 		var links = graph.getLinks();
-	    links.forEach(function(link){
-	        if(!isLinkInvalid(link)){
-				if ((link.attributes.attrs[".link-type"] != "none") && (link.attributes.attrs[".link-type"] != "Qualification")){
+	  links.forEach(function(link){
+	    if(!isLinkInvalid(link)){
+				if ((link.attributes.attrs[".link-type"] != "none") && 
+						(link.attributes.attrs[".link-type"] != "Qualification")){
 					savedLinks.push(link);
 					// add 1 to the node for each incoming link
 					if (link.label(0).attrs.text.text != "depends"){
 						LinkCalc[link.get("target").id] ++;
-					}
-					else {// for dependency link, source and target are the inverse of the regular link
+					} else {// for dependency link, source and target are the inverse of the regular link
 						LinkCalc[link.get("source").id] ++;
 					}
 				}
-	        }
-	        else{link.remove();}
+	    }
+	    else{link.remove();}
 		});
 	}
 
@@ -1210,7 +1210,24 @@ $('#frd-analysis-btn').on('click', function(){
 	if (linkMode == "Relationships"){
 		var links = graph.getLinks();
 	    links.forEach(function(link){
-	    	if(!isLinkInvalid(link)){							
+	    	if(!isLinkInvalid(link)){	
+					if ((link.attributes.attrs[".link-type"] != "none") && 
+							(link.attributes.attrs[".link-type"] != "Qualification")){
+						// add 1 to the node for each incoming link
+						if (link.label(0).attrs.text.text != "depends"){
+							savedLinks.push(link);
+							LinkCalc[link.get("target").id] ++;
+						} else {
+							// for dependency link, source and target are the inverse of the regular link
+							//LinkCalc[link.get("source").id] ++;
+							var sourceCell = link.getTargetElement();
+							if(!(sourceCell instanceof joint.shapes.basic.Actor2)){
+								savedLinks.push(link);
+								LinkCalc[link.get("source").id] ++;
+							}
+						}
+					}					
+/*
 					// add 1 to the node for each incoming link
 					if (link.label(0).attrs.text.text == "depends"){
 						var targetCell = link.getTargetElement();
@@ -1225,6 +1242,7 @@ $('#frd-analysis-btn').on('click', function(){
 						savedLinks.push(link);
 						LinkCalc[link.get("source").id] ++;
 					}
+*/
 				}else{
 					link.remove();
 				}
@@ -1344,6 +1362,7 @@ function calculateEvaluation(elements, savedLinks, element) {
 			linksWanted.push(current);
 		}
 	}
+	var refinementType = ""
 	// get the current evaluation value of the source and target along with the link label
 	for (var l = 0; l < linksWanted.length; l++){
 		var eachLink = linksWanted[l];
@@ -1356,6 +1375,7 @@ function calculateEvaluation(elements, savedLinks, element) {
 		// decomposition (and, or)
 		if (eachLink.label(0).attrs.text.text == "and" || eachLink.label(0).attrs.text.text == "or" || eachLink.attributes.attrs[".link-type"] == "NeededBy"){
 			hasDecomposition = true;
+			refinementType = eachLink.label(0).attrs.text.text;
 			decomSums[sVal]++;
 		} else if (eachLink.label(0).attrs.text.text == "helps" || eachLink.label(0).attrs.text.text == "hurts" || eachLink.label(0).attrs.text.text == "makes" || eachLink.label(0).attrs.text.text == "breaks") {
 			// contributions
@@ -1372,7 +1392,7 @@ function calculateEvaluation(elements, savedLinks, element) {
 
 	var result = satValueDict[element.attr(".satvalue/value")]; // use the initia value of the element to be the initial value
 	if (hasDecomposition){
-		result = getDecomposition(decomSums, eachLink);
+		result = getDecomposition(decomSums, refinementType);
 	}
 		
 	if (numContributions > 0) {
@@ -1384,13 +1404,13 @@ function calculateEvaluation(elements, savedLinks, element) {
 	if (hasDependencies){
 		if (hasDecomposition || numContributions > 0) // Since result will be none we shouldn't need this condition, just the next statement.
 			dependSums[result]++;		// Add previous result to the dependSum.
-		result = getDecomposition(dependSums, eachLink);
+		result = getDecomposition(dependSums, "depends");
 	}
 
 	return result;
 }
 
-function getDecomposition(decomSums, eachLink){
+function getDecomposition(decomSums, type){
 	/**
 	 * return the satisfaction value of the node which has decomposition links
 	 * its arguments are:
@@ -1398,14 +1418,15 @@ function getDecomposition(decomSums, eachLink){
 	 * of occurance of each satisfaction value associated with the ndoe
 	 * `type`: indicates types of decomposition. Either AND or OR
 	 */
-	// rules
-	type_ = eachLink.label(0).attrs.text.text
-	if (type_ == "Refinement") {
-		type = eachLink.label(0).attrs.text.text
-	}
-	else{
-		type = "NeededBy"
-	}
+	// type_ = eachLink.label(0).attrs.text.text
+	// if ((type_ == "Refinement")||
+	// 		(type_ == "and")||
+	// 		(type_ == "or"))  {
+	// 	type = eachLink.label(0).attrs.text.text
+	// }
+	// else{
+	// 	type = "NeededBy"
+	// }
 	var result = N;
 	var dns = decomSums[S];
 	var dnws = decomSums[PS];
@@ -1415,7 +1436,8 @@ function getDecomposition(decomSums, eachLink){
 	var dnc = decomSums[C];
 	var dnu = decomSums[U];
 	// console.log(dns,dnws,dnn,dnwd,dnd,dnc,dnu);
-	if (type == "and" || type == "NeededBy") {
+	if (type == "and" || type == "NeededBy" ||
+			type == "depends") {
 		if (dnd > 0) {
 			result = D;
 		} else if ((dnc > 0) || (dnu > 0)) {
