@@ -1017,6 +1017,8 @@ function download(filename, text) {
 // Random Analysis - Based on Forward Propagation Algorithm.
 // TODO: Merge with Forward analysis algrorithm. Only "Code Specific to Random Analysis" is different.
 $('#rnd-analysis-btn').on('click', function(){
+	var test_links = graph.getLinks();
+	test_links.forEach(function(link){setLinkType(link);});
 	var all_elements = graph.getElements();
 	var eLabelsBefore = [];
 	// store the evaluation values
@@ -1165,7 +1167,9 @@ $('#rnd-analysis-btn').on('click', function(){
 
 // ----------------------------------------------------------------- //
 // Forward Analysis: A propagation algorithm from leaves to roots.
-$('#frd-analysis-btn').on('click', function(){
+$('#frd-analysis-btn').on('click', function(){	
+	var test_links = graph.getLinks();
+	test_links.forEach(function(link){setLinkType(link);});
 	// Charlie Question: how do you update the drawing and also the elementInspector value together
 	// Charlie TODO: Check to make sure there are not nodes that have more than one type of Decomposition (AND/OR/XOR) connected to them.
 	var all_elements = graph.getElements();
