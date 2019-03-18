@@ -862,7 +862,7 @@ KeyboardJS.on('ctrl + r', function(){
 });
 KeyboardJS.on('command + r, ctrl + r', function() {
 	console.log("Mac Refresh denied.")
-	//return false;		// TODO: Uncomment before study.
+	return false;		
 });
 // ----------------------------------------------------------------- //
 // Toolbar
